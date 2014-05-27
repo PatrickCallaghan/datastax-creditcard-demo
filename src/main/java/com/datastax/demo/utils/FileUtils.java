@@ -9,11 +9,12 @@ import java.util.List;
 
 public class FileUtils {
 
+	private static final String RESOURCES_DIR = "src/main/resources";
 	public static List<String> readFileIntoList(String filename) {
 
 		List<String> fileList = new ArrayList<String>();
 		BufferedReader br = null;
-		File file = new File("src/main/resources", filename);
+		File file = new File(RESOURCES_DIR, filename);
 
 		try {
 			String currentLine;
@@ -38,7 +39,7 @@ public class FileUtils {
 	
 		StringBuffer buffer = new StringBuffer();
 		BufferedReader br = null;
-		File file = new File("src/main/resources", filename);
+		File file = new File(RESOURCES_DIR, filename);
 
 		try {
 			String currentLine;

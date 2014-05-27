@@ -1,6 +1,5 @@
 package com.datastax.creditcard;
 
-import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -19,65 +18,86 @@ import com.datastax.demo.utils.Timer;
 public class Main {
 
 	private static Logger logger = LoggerFactory.getLogger(Main.class);
-	private DecimalFormat myFormatter = new DecimalFormat("####.##");
 	private DateTime date;
+	private static int BATCH = 10000;
 
 	public Main() {
 
-		//Create yesterdays date at midnight
+		// Create yesterdays date at midnight
 		this.date = new DateTime().minusDays(1).withTimeAtStartOfDay();
-		
+
 		String contactPointsStr = PropertyHelper.getProperty("contactPoints", "localhost");
-		String noOfCreditCardsStr = PropertyHelper.getProperty("noOfCreditCards", "10000");
-		String noOfTransactionsStr = PropertyHelper.getProperty("noOfTransactions", "1000000");
-		
+		String noOfCreditCardsStr = PropertyHelper.getProperty("noOfCreditCards", "1000");
+		String noOfTransactionsStr = PropertyHelper.getProperty("noOfTransactions", "20000");
+
 		CreditCardDao dao = new CreditCardDao(contactPointsStr.split(","));
-				
+
 		int noOfTransactions = Integer.parseInt(noOfTransactionsStr);
 		int noOfCreditCards = Integer.parseInt(noOfCreditCardsStr);
+
+		//Initialize credit cards;
+		dao.createCreditCards(noOfCreditCards);
+		
 		
 		Timer timer = new Timer();
-		timer.start();
+		logger.info("Writing " + noOfTransactions + " transactions for " + noOfCreditCards + " credit cards.");
 		
-		for (int i=0;i < noOfTransactions; i++){
+		int total = 0;
+		for (int i = 0; i < noOfTransactions; i++) {
 			dao.insertTransaction(createRandomTransaction(noOfCreditCards));
+
+			if (i > 0 && i % BATCH == 0) {
+				total += BATCH;
+				logger.info("Wrote " + total + " records");
+				
+				updateBalances(dao);
+				
+			}
 		}
-		
 		timer.end();
-		logger.info("Credit Cards Load took " + timer.getTimeTakenSeconds() + " secs.");		
+		logger.info("Credit Cards Load took " + timer.getTimeTakenSeconds() + " secs.");
+		
+		updateBalances(dao);
+	}
+
+	private void updateBalances(CreditCardDao dao) {
+		Timer timer1 = new Timer();
+		dao.updateCreditCardWithBalance();
+		timer1.end();
+		logger.info("Credit Cards balance update took " + timer1.getTimeTakenMillis() + " ms.");
 	}
 
 	private Transaction createRandomTransaction(int noOfCreditCards) {
-		
-		double creditCardNo = Math.ceil(Math.random() * noOfCreditCards);
-		int noOfItems = new Double(Math.ceil(5)).intValue();
+
+		int creditCardNo = new Double(Math.ceil(Math.random() * noOfCreditCards)).intValue();
+		int noOfItems = new Double(Math.ceil(Math.random() * 5)).intValue();
 		String issuer = issuers.get(new Double(Math.random() * issuers.size()).intValue());
 		String location = locations.get(new Double(Math.random() * locations.size()).intValue());
-				
-		//create time by adding a random no of milliseconds to the midnight of yesterday.
-		date = date.plusMillis(new Double(Math.random()*100).intValue()); 		
-		
+
+		// create time by adding a random no of milliseconds to the midnight of
+		// yesterday.
+		date = date.plusMillis(new Double(Math.random() * 100).intValue());
+
 		Transaction transaction = new Transaction();
 		createItemsAndAmount(noOfItems, transaction);
-		transaction.setCreditCardNo(new Double(creditCardNo).toString());
+		transaction.setCreditCardNo(new Integer(creditCardNo).toString());
 		transaction.setIssuer(issuer);
 		transaction.setTransactionId(UUID.randomUUID().toString());
 		transaction.setTransactionTime(date.toDate());
 		transaction.setLocation(location);
-			
+
 		return transaction;
 	}
-
 
 	private void createItemsAndAmount(int noOfItems, Transaction transaction) {
 		Map<String, Double> items = new HashMap<String, Double>();
 		double totalAmount = 0;
-		
-		for (int i=0; i < noOfItems; i++){
-			
-			double amount = new Double(Math.random()*1000);
+
+		for (int i = 0; i < noOfItems; i++) {
+
+			double amount = new Double(Math.random() * 1000);
 			items.put("item" + i, amount);
-			
+
 			totalAmount += amount;
 		}
 		transaction.setAmount(totalAmount);
@@ -89,35 +109,15 @@ public class Main {
 	 */
 	public static void main(String[] args) {
 		new Main();
-		
+
 		System.exit(0);
 	}
-	
-	private List<String> locations = Arrays.asList("London", "Manchester", "Liverpool", "Glasgow", "Dundee", "Birmingham");
-	
-	private List<String> issuers = Arrays.asList("Tesco",
-			"Sainsbury",
-			"Asda Wal-Mart Stores",
-			"Morrisons",
-			"Marks & Spencer",
-			"Boots",
-			"John Lewis",
-			"Waitrose",
-			"Argos",
-			"Co-op",
-			"Currys",
-			"PC World",
-			"B&Q",
-			"Somerfield",
-			"Next",
-			"Spar",
-			"Amazon",
-			"Costa",
-			"Starbucks",
-			"BestBuy",
-			"Wickes",
-			"TFL",
-			"National Rail",
-			"Pizza Hut",
-			"Local Pub");
+
+	private List<String> locations = Arrays.asList("London", "Manchester", "Liverpool", "Glasgow", "Dundee",
+			"Birmingham");
+
+	private List<String> issuers = Arrays.asList("Tesco", "Sainsbury", "Asda Wal-Mart Stores", "Morrisons",
+			"Marks & Spencer", "Boots", "John Lewis", "Waitrose", "Argos", "Co-op", "Currys", "PC World", "B&Q",
+			"Somerfield", "Next", "Spar", "Amazon", "Costa", "Starbucks", "BestBuy", "Wickes", "TFL", "National Rail",
+			"Pizza Hut", "Local Pub");
 }

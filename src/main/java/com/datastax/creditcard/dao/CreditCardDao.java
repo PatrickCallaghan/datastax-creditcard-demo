@@ -3,6 +3,7 @@ package com.datastax.creditcard.dao;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 
@@ -22,8 +23,7 @@ import com.datastax.driver.core.Session;
 
 public class CreditCardDao {
 
-	private static Logger logger = LoggerFactory.getLogger( CreditCardDao.class );
-	
+	private static Logger logger = LoggerFactory.getLogger( CreditCardDao.class );	
 	private Session session;
 	
 	private DateFormat dateFormatter = new SimpleDateFormat("yyyyMMdd");
@@ -36,23 +36,28 @@ public class CreditCardDao {
 			+ " (credit_card_no, transaction_time, transaction_id, items, location, issuer, amount) values (?,?,?,?,?,?,?);";	
 	
 	private static final String INSERT_INTO_ISSUER = "insert into " + issuerTable +  
-				"(issuer, date, transaction_id, credit_card_no, transaction_time, items, location, amount) values (?,?,?,?,?,?,?)"; 	
+				"(issuer, date, transaction_id, credit_card_no, transaction_time, items, location, amount) values (?,?,?,?,?,?,?,?)"; 	
 	
 	private static final String UPDATE_COUNTER = "update " + transactionCounterTable + " "
-			+ "set  total_for_minute = total_for_minute + 1 where date=? AND minute=?";
+			+ "set  total_for_minute = total_for_minute + 1 where date=? AND hour=? AND minute=?";
 				
-	private static final String UPDATE_BALANCE = "update credit_card_transactions_balance set balance = ?, balance_at = ? "
+	private static final String UPDATE_BALANCE = "update " + transactionTable + " set balance = ?, balance_at = ? "
 			+ " where credit_card_no = ?";
+
+	private static final String INSERT_BALANCE = "insert into " + transactionTable + "(credit_card_no, balance, balance_at)"
+			+ " values (?,?,?)";
 	
 	private static final String GET_ALL_CREDIT_CARDS = "select credit_card_no, balance_at, balance from " + transactionTable;
 	
-	private static final String GET_ALL_TRANSACTIONS_BY_TIME = "select amount from " + transactionTable + " where transaction_time > ?";
+	private static final String GET_ALL_TRANSACTIONS_BY_TIME = "select amount, transaction_time from " + transactionTable + " where credit_card_no = ? "
+			+ "and transaction_time > ?";
 	
 	private PreparedStatement insertTransactionStmt;
 	private PreparedStatement insertIssuerStmt;
 	private PreparedStatement updateCounter;
 	
 	private PreparedStatement updateBalance;
+	private PreparedStatement insertBalance;
 	private PreparedStatement getTransTime;
 	
 	public CreditCardDao(String[] contactPoints) {
@@ -68,6 +73,7 @@ public class CreditCardDao {
 		this.updateCounter = session.prepare(UPDATE_COUNTER);
 		
 		this.updateBalance = session.prepare(UPDATE_BALANCE);
+		this.insertBalance = session.prepare(INSERT_BALANCE);
 		this.getTransTime = session.prepare(GET_ALL_TRANSACTIONS_BY_TIME);
 		
 		this.insertTransactionStmt.setConsistencyLevel(ConsistencyLevel.QUORUM);
@@ -78,11 +84,19 @@ public class CreditCardDao {
 		this.getTransTime.setConsistencyLevel(ConsistencyLevel.ALL);
 	}
 
+	public void createCreditCards(int cards){
+		
+		for (int i=1; i < cards + 1; i++){
+			session.execute(this.insertBalance.bind("" + i, 0d, DateTime.parse("2001-01-01").toDate()));
+		}
+	}
+	
 	public void insertTransaction (Transaction transaction){
 		
 		DateTime dateTime = new DateTime(transaction.getTransactionTime());
 		
-		int minute = dateTime.getMinuteOfDay();
+		int minute = dateTime.getMinuteOfHour();
+		int hour = dateTime.getHourOfDay();
 		String date = dateFormatter.format(dateTime.toDate());
 				
 		BatchStatement batch = new BatchStatement();
@@ -91,18 +105,42 @@ public class CreditCardDao {
 				transaction.getItems(), transaction.getLocation(), transaction.getIssuer(), transaction.getAmount()));
 		batch.add(this.insertIssuerStmt.bind(transaction.getIssuer(), date, transaction.getTransactionId(), transaction.getCreditCardNo(),
 				transaction.getTransactionTime(), transaction.getItems(), transaction.getLocation(), transaction.getAmount()));
-		batch.add(this.updateCounter.bind(date, minute));
-		
+				
 		session.execute(batch);
+		
+		session.execute(this.updateCounter.bind(date, hour, minute));
 	}
 
 	public boolean updateCreditCardWithBalance(){
 		//Get all credit cards 		
-		ResultSet resultSet = session.execute(GET_ALL_CREDIT_CARDS);		
-		List<CreditBalance> creditBalances = this.createCreditBalances(resultSet);
+		ResultSet resultSetAllCreditCards = session.execute(GET_ALL_CREDIT_CARDS);		
+		List<CreditBalance> creditBalances = this.createCreditBalances(resultSetAllCreditCards);
+		Date balanceAt;
+				
+		logger.info("Updating balances for " + creditBalances.size() + " credit cards.");
 		
 		for (CreditBalance creditBalance : creditBalances){
 			
+			balanceAt = creditBalance.getBalanceAt()==null ? DateTime.parse("2001-01-01").toDate() : creditBalance.getBalanceAt();			
+			double total = creditBalance.getAmount()==null ? 0 : creditBalance.getAmount();
+			
+			//set the new balance date to the last one until we get new transactions.
+			Date newBalanceAt = balanceAt; 
+			ResultSet resultSet = session.execute(this.getTransTime.bind(creditBalance.getCreditCardNo(), balanceAt));			
+			Iterator<Row> iterator = resultSet.iterator();
+			
+			while (iterator.hasNext()){	
+				Row row = iterator.next();
+				
+				total = total + row.getDouble("amount");
+					
+				if (row.getDate("transaction_time").after(newBalanceAt)){
+					newBalanceAt = row.getDate("transaction_time");
+				}				
+			}
+			
+			//update the balance with the date of the latest transaction that has been processed. 
+			session.execute(updateBalance.bind(total, newBalanceAt, creditBalance.getCreditCardNo()));
 		}
 		
 		return true;
