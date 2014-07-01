@@ -35,10 +35,10 @@ To start the credit card processor, run
     
 Other properties that can be added are noOfTransactions, noOfCreditCards
 
-	mvn clean compile exec:java -Dexec.mainClass="com.datastax.creditcard.Main"  -DnoOfTransactions=1000000 -DnoOfCreditCards=10000
+    mvn clean compile exec:java -Dexec.mainClass="com.datastax.creditcard.Main"  -DnoOfTransactions=1000000 -DnoOfCreditCards=10000
 	
 To remove the tables and the schema, run the following.
 
     mvn clean compile exec:java -Dexec.mainClass="com.datastax.demo.SchemaTeardown"
     
-
+    
