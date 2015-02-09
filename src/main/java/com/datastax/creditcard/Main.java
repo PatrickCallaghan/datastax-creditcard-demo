@@ -24,11 +24,11 @@ public class Main {
 	public Main() {
 
 		// Create yesterdays date at midnight
-		this.date = new DateTime().minusDays(1).withTimeAtStartOfDay();
+		this.date = new DateTime().minusDays(30).withTimeAtStartOfDay();
 
 		String contactPointsStr = PropertyHelper.getProperty("contactPoints", "localhost");
 		String noOfCreditCardsStr = PropertyHelper.getProperty("noOfCreditCards", "1000");
-		String noOfTransactionsStr = PropertyHelper.getProperty("noOfTransactions", "20000");
+		String noOfTransactionsStr = PropertyHelper.getProperty("noOfTransactions", "50000");
 
 		CreditCardDao dao = new CreditCardDao(contactPointsStr.split(","));
 
@@ -37,8 +37,7 @@ public class Main {
 
 		//Initialize credit cards;
 		dao.createCreditCards(noOfCreditCards);
-		
-		
+				
 		Timer timer = new Timer();
 		logger.info("Writing " + noOfTransactions + " transactions for " + noOfCreditCards + " credit cards.");
 		
@@ -46,18 +45,28 @@ public class Main {
 		for (int i = 0; i < noOfTransactions; i++) {
 			dao.insertTransaction(createRandomTransaction(noOfCreditCards));
 
+			sleep(1);
 			if (i > 0 && i % BATCH == 0) {
 				total += BATCH;
 				logger.info("Wrote " + total + " records");
 				
-				updateBalances(dao);
-				
+				//updateBalances(dao);	
+				sleep(50);
 			}
 		}
 		timer.end();
 		logger.info("Credit Cards Load took " + timer.getTimeTakenSeconds() + " secs.");
 		
 		updateBalances(dao);
+	}
+
+	private void sleep(int i) {
+		try {
+			Thread.sleep(i);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	private void updateBalances(CreditCardDao dao) {
@@ -74,9 +83,9 @@ public class Main {
 		String issuer = issuers.get(new Double(Math.random() * issuers.size()).intValue());
 		String location = locations.get(new Double(Math.random() * locations.size()).intValue());
 
-		// create time by adding a random no of milliseconds to the midnight of
+		// create time by adding a random no of seconds to the midnight of
 		// yesterday.
-		date = date.plusMillis(new Double(Math.random() * 100).intValue());
+		date = date.plusSeconds(new Double(Math.random() * 100).intValue());
 
 		Transaction transaction = new Transaction();
 		createItemsAndAmount(noOfItems, transaction);

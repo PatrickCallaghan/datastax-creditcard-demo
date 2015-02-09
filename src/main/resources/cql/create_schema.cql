@@ -1,4 +1,4 @@
-create keyspace if not exists datastax_creditcard_demo WITH replication = {'class': 'SimpleStrategy', 'replication_factor': '1' };
+create keyspace if not exists datastax_creditcard_demo WITH replication = {'class': 'NetworkTopologyStrategy', 'Analytics': 1};
 
 use datastax_creditcard_demo; 
  
@@ -32,7 +32,7 @@ create table if not exists transaction_date_minute_counter (
 	hour int, 
 	minute int,
 	total_for_minute counter,
-	PRIMARY KEY  (date, hour, minute)	
+	PRIMARY KEY  (date, hour, minute)
 );
 	
 truncate credit_card_transactions_balance;

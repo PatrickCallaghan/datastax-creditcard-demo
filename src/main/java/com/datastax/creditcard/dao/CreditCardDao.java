@@ -20,6 +20,7 @@ import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
+import com.datastax.driver.core.policies.DCAwareRoundRobinPolicy;
 
 public class CreditCardDao {
 
@@ -76,12 +77,12 @@ public class CreditCardDao {
 		this.insertBalance = session.prepare(INSERT_BALANCE);
 		this.getTransTime = session.prepare(GET_ALL_TRANSACTIONS_BY_TIME);
 		
-		this.insertTransactionStmt.setConsistencyLevel(ConsistencyLevel.QUORUM);
-		this.insertIssuerStmt.setConsistencyLevel(ConsistencyLevel.QUORUM);
-		this.updateCounter.setConsistencyLevel(ConsistencyLevel.QUORUM);
+		this.insertTransactionStmt.setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
+		this.insertIssuerStmt.setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
+		this.updateCounter.setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
 		
-		this.updateBalance.setConsistencyLevel(ConsistencyLevel.ALL);
-		this.getTransTime.setConsistencyLevel(ConsistencyLevel.ALL);
+		this.updateBalance.setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
+		this.getTransTime.setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
 	}
 
 	public void createCreditCards(int cards){
