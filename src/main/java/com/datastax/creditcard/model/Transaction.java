@@ -12,6 +12,8 @@ public class Transaction {
 	private String location;
 	private String issuer;
 	private Double amount;
+	private String status;	
+	private String notes;
 
 	public Transaction() {
 		super();
@@ -73,10 +75,26 @@ public class Transaction {
 		this.amount = amount;
 	}
 
+	public String getNotes() {
+		return notes;
+	}
+
+	public void setNotes(String notes) {
+		this.notes = notes;
+	}
+
+	public String getStatus() {
+		return status;
+	}
+
+	public void setStatus(String status) {
+		this.status = status;
+	}
+	
 	@Override
 	public String toString() {
 		return "Transaction [creditCardNo=" + creditCardNo + ", transactionTime=" + transactionTime
 				+ ", transactionId=" + transactionId + ", items=" + items + ", location=" + location + ", issuer="
 				+ issuer + ", amount=" + amount + "]";
-	}	
+	}
 }
