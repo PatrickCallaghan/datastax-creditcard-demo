@@ -15,13 +15,13 @@ import com.datastax.creditcard.model.Transaction;
 import com.datastax.demo.utils.PropertyHelper;
 import com.datastax.demo.utils.Timer;
 
-public class Main {
+public class TransactionCreator {
 
-	private static Logger logger = LoggerFactory.getLogger(Main.class);
+	private static Logger logger = LoggerFactory.getLogger(TransactionCreator.class);
 	private DateTime date;
 	private static int BATCH = 10000;
 
-	public Main() {
+	public TransactionCreator() {
 
 		// Create yesterdays date at midnight
 		this.date = new DateTime().minusDays(30).withTimeAtStartOfDay();
@@ -116,7 +116,7 @@ public class Main {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		new Main();
+		new TransactionCreator();
 
 		System.exit(0);
 	}
@@ -127,5 +127,5 @@ public class Main {
 	private List<String> issuers = Arrays.asList("Tesco", "Sainsbury", "Asda Wal-Mart Stores", "Morrisons",
 			"Marks & Spencer", "Boots", "John Lewis", "Waitrose", "Argos", "Co-op", "Currys", "PC World", "B&Q",
 			"Somerfield", "Next", "Spar", "Amazon", "Costa", "Starbucks", "BestBuy", "Wickes", "TFL", "National Rail",
-			"Pizza Hut", "Local Pub");
+			"Pizza Hut", "Local Pub");	
 }
