@@ -1,0 +1,10 @@
+~/Tools/cassandra-loader/build/cassandra-loader -f users.csv -host localhost -schema "datastax_creditcard_demo.users(user_id,first,last,gender,city,state,cc_no)"
+
+~/Tools/cassandra-loader/build/cassandra-loader -f issuers.csv -host localhost -schema "datastax_creditcard_demo.issuers(id, name, location)"
+
+insert into blacklist_issuers (issuer, city, amount) values ('Issuer7','City-4986',450);
+insert into blacklist_issuers (issuer, city, amount) values ('Issuer7','City-4986',50);
+insert into blacklist_issuers (issuer, city, amount) values ('Issuer50000','City-1969',200);
+
+insert into blacklist_cards (dummy, cc_no, amount) values ('dummy', '0000000005702649', 1000);
+insert into blacklist_cards (dummy, cc_no, amount) values ('dummy', '0000000004737244', 1000);
