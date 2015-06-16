@@ -97,4 +97,8 @@ public class Transaction {
 				+ ", transactionId=" + transactionId + ", items=" + items + ", location=" + location + ", issuer="
 				+ issuer + ", amount=" + amount + "]";
 	}
+	
+	public enum Status {
+		CHECK, PENDING, APPROVED, DECLINED
+	}
 }

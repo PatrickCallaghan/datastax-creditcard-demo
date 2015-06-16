@@ -1,6 +1,13 @@
 package com.datastax.creditcard.services;
 
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -8,11 +15,17 @@ import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.SolrParams;
 import org.joda.time.DateMidnight;
+import org.joda.time.DateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.datastax.creditcard.dao.CreditCardDao;
+import com.datastax.creditcard.model.BlacklistIssuer;
 import com.datastax.creditcard.model.Issuer;
 import com.datastax.creditcard.model.Transaction;
+import com.datastax.creditcard.model.Transaction.Status;
 import com.datastax.creditcard.model.User;
+import com.datastax.demo.utils.Timer;
 
 /**
  * 
@@ -51,10 +64,113 @@ Issuer View
 @SuppressWarnings("deprecation")
 public class CreditCardService {
 	
-	private static final int DEFAULT_PAGE = 100;
-	private CreditCardDao dao = new CreditCardDao(new String[]{"localhost"});
-	private SolrServer solr = new HttpSolrServer("");
+	private static Logger logger = LoggerFactory.getLogger(CreditCardService.class);
 	
+	private static final int DEFAULT_PAGE = 100;
+	private CreditCardDao dao;
+	private SolrServer solr = new HttpSolrServer("");
+	private List<Rule> rules = new ArrayList<Rule>();
+	
+	private Map<String, String> ccNoUserIdMap = new HashMap<String,String>();	
+	private Map<String, Double> ccNoBlackMap = new HashMap<String, Double>();
+	private Map<String, BlacklistIssuer> issuerBlackList = new HashMap<String, BlacklistIssuer>();
+	
+	public CreditCardService(){
+		this.dao = new CreditCardDao(new String[]{"localhost"});
+		init();
+	}
+	
+	public CreditCardService(String contactPointsStr) {
+		this.dao = new CreditCardDao(contactPointsStr.split(","));
+		init();
+	}
+
+	private void init(){
+		startScheduler();
+		
+		logger.info("Loading Credit Card-UserId Map");
+		Timer timer = new Timer();
+		ccNoUserIdMap = dao.getCreditCardUserIdMap();
+		timer.end();
+		logger.info("Loaded Credit Card-UserId Map of size : " + ccNoUserIdMap.size() + " in " + timer.getTimeTakenSeconds() + "secs");
+
+		startScheduler();
+	}
+	
+	private void startScheduler() {
+		// Schedule the update blacklists
+		ScheduledExecutorService exec = Executors.newScheduledThreadPool(1);
+		exec.scheduleWithFixedDelay(new Runnable() {
+
+			@Override
+			public void run() {
+				
+				Timer timer = new Timer();
+				ccNoBlackMap = dao.getBlackListDao().getBlacklistCards();
+				issuerBlackList = dao.getBlackListDao().getBlacklistIssuers();	
+				timer.end();
+			}
+
+		}, 0, 10, TimeUnit.SECONDS);
+	}
+
+		
+	public void processTransaction (Transaction transaction){
+				
+		if (this.ccNoUserIdMap.containsKey(transaction.getCreditCardNo()) ){
+			String userId = this.ccNoUserIdMap.get(transaction.getCreditCardNo());
+						
+			for (Rule rule : rules){
+				if (this.ccNoBlackMap.containsKey(transaction.getCreditCardNo())){
+					Double amount = this.ccNoBlackMap.get(transaction.getCreditCardNo());
+					
+					if (transaction.getAmount() > amount){
+						//log as check
+					}					
+				}
+			}
+			processAmountRule(transaction);
+			processIssuerRule(transaction);
+			
+			dao.saveTransaction(transaction);
+			dao.getCounterDao().updateCounters(transaction, userId);
+
+		}else{
+			logger.error(transaction.getCreditCardNo() + " not in user map");
+			return;
+		}		
+	}
+
+	
+	private void processIssuerRule(Transaction transaction) {
+		if (this.issuerBlackList.containsKey(transaction.getIssuer())){
+			
+			BlacklistIssuer blacklistIssuer = this.issuerBlackList.get(transaction.getIssuer());
+			
+			Map<String, Double> cityAmount = blacklistIssuer.getCityAmount();
+			
+			if (cityAmount.containsKey(transaction.getLocation())){
+				double checkAmount = cityAmount.get(transaction.getLocation());
+					
+				if (checkAmount < transaction.getAmount()){		
+					transaction.setStatus(Status.CHECK.toString());
+					transaction.setNotes("Amount is " + transaction.getAmount() + " when check limit has been set to " + checkAmount + ".\n + " + transaction.getNotes());					
+				}						
+			}
+		}
+	}
+
+	private void processAmountRule(Transaction transaction) {
+		if (ccNoBlackMap.containsKey(transaction.getCreditCardNo())){
+			double checkAmount = ccNoBlackMap.get(transaction.getCreditCardNo());
+			
+			if (checkAmount < transaction.getAmount()){
+				transaction.setStatus(Status.CHECK.toString());
+				transaction.setNotes("Amount is " + transaction.getAmount() + " when check limit has been set to " + checkAmount + ".\n + " + transaction.getNotes());
+			}
+		}		
+	}
+
 	public User getUserById(String userId) {
 		return dao.getUser(userId);
 	}
@@ -95,59 +211,48 @@ public class CreditCardService {
 	}
 
 	public List<Transaction> getBlacklistTransactions() {
-		return dao.getBlacklistTransactions();
+		return this.getBlacklistTransactions(new Date());
+	}
+	public List<Transaction> getBlacklistTransactions(Date date) {
+		
+		return this.dao.getTransactions(dao.getBlackListDao().getBlacklistTransactions(new Date()));
 	}
 
 	public void updateStatusNotes(String status, String notes, String creditCardNo, String transactionId) {
 		dao.updateStatusNotes(status, notes, creditCardNo, transactionId);		
 	}
 
-	public int getTotalNoOfTransactions(){
-		return 0;
-	}
 	
-	public int getNoOfTransactionsUserMin(){
-		return 0;
+	public Map<String, Integer> getTotalNoOfTransactions(int nDays){
+		return dao.getCounterDao().getTransCounterLastNDays(DateTime.now(), nDays);
+	}	
+
+	public Map<String, Integer> getNoOfTransactionsUserHour(String user, int hour, int nDays){
+		return dao.getCounterDao().getUserHourCounterLastNDays(user, DateTime.now(), hour, nDays);
 	}
 
-	public int getNoOfTransactionsUserHour(){
-		return 0;
+	public Map<String, Integer> getNoOfTransactionsUserDay(String user, int nDays){
+		return dao.getCounterDao().getUserCounterLastNDays(user, DateTime.now(), nDays);
 	}
 
-	public int getNoOfTransactionsUserDay(){
-		return 0;
-	}
-	
-	public int getNoOfTransactionsUser(){
-		return 0;
+	public Map<String, Integer> getNoOfTransactionsIssuerHour(String issuer, int hour, int nDays){
+		return dao.getCounterDao().getUserHourCounterLastNDays(issuer, DateTime.now(), hour, nDays);
 	}
 
-	public int getNoOfTransactionsIssuerMin(){
-		return 0;
-	}
-
-	public int getNoOfTransactionsIssuerHour(){
-		return 0;
-	}
-
-	public int getNoOfTransactionsIssuerDay(){
-		return 0;
-	}
-	
-	public int getNoOfTransactionsIssuer(){
-		return 0;
-	}
-	
-	public int getNoOfTransactionsSector(){
-		return 0;
+	public Map<String, Integer> getNoOfTransactionsIssuerDay(String issuer, int nDays){
+		return dao.getCounterDao().getIssuerCounterLastNDays(issuer, DateTime.now(), nDays);
 	}
 	
 	public List<User> searchUser(){
 		return null;
 	}
 
-
 	public List<Issuer> searchIssuer(){
 		return null;
+	}
+	
+	
+	public static void main(String args[]){
+		new CreditCardService();		
 	}
 }

@@ -4,25 +4,28 @@ use datastax_creditcard_demo;
  
 CREATE TABLE if not exists credit_card_transactions_balance (
 	cc_no text,
-	transaction_id timeuuid,
+	transaction_time timestamp,
+	transaction_id text,
 	amount double,
 	balance_at timestamp static,
 	balance double static,
-	PRIMARY KEY (cc_no, transaction_id)
-) WITH CLUSTERING ORDER BY (transaction_id DESC);
+	PRIMARY KEY (cc_no, transaction_time )
+) WITH CLUSTERING ORDER BY (transaction_time DESC);
 
 CREATE TABLE if not exists credit_card_transactions_by_issuer_date (
 	issuer text,
+	transaction_time timestamp,
 	date text, 
-	transaction_id timeuuid,
+	transaction_id text,
 	cc_no text,
 	amount double,
- 	PRIMARY KEY ((issuer, date), transaction_id)
-) WITH CLUSTERING ORDER BY (transaction_id DESC);
+ 	PRIMARY KEY ((issuer, date), transaction_time)
+) WITH CLUSTERING ORDER BY (transaction_time DESC);
 	
 create table if not exists latest_transactions(
 	cc_no text,
-	transaction_id timeuuid,
+	transaction_time timestamp,
+	transaction_id text,
 	location text,
 	items map<text, double>,
 	issuer text,
@@ -30,14 +33,14 @@ create table if not exists latest_transactions(
 	status text,
 	notes text,
 	PRIMARY KEY (cc_no, transaction_id)
-) WITH CLUSTERING ORDER BY (transaction_id DESC) 
-	 AND compaction= { 'class': 'MemoryOnlyStrategy' }
+) WITH compaction= { 'class': 'MemoryOnlyStrategy' }
      AND compression = {'sstable_compression' : ''}
      AND caching = {'keys':'NONE', 'rows_per_partition':'NONE'};
 
 create table if not exists transactions(
 	cc_no text,
- 	transaction_id timeuuid,
+	transaction_time timestamp,
+ 	transaction_id text,
 	location text,
 	items map<text, double>,
 	issuer text,
@@ -48,10 +51,11 @@ create table if not exists transactions(
 );
 
 create table if not exists blacklist_transactions(
-	dummy text,
- 	transaction_id timeuuid,
-	PRIMARY KEY (dummy)
-);
+	date text,
+	transaction_time timestamp,
+ 	transaction_id text,
+	PRIMARY KEY (date, timestamp)
+) WITH CLUSTERING ORDER BY (transaction_time DESC);
      
 create table if not exists users(
 	user_id text PRIMARY KEY,
@@ -61,7 +65,9 @@ create table if not exists users(
 	city text,
 	state text,
 	cc_no text
-);
+) WITH compaction= { 'class': 'MemoryOnlyStrategy' }
+     AND compression = {'sstable_compression' : ''}
+     AND caching = {'keys':'NONE', 'rows_per_partition':'NONE'};
 
 create table if not exists issuers(
     id text,
@@ -103,10 +109,10 @@ create table if not exists transaction_date_minute_counter (
 create table if not exists trans_issuer_date_minute_counter (
 	issuer text,
 	date text,
-	hour intm
+	hour int,
 	minute int,
 	total counter,
-	PRIMARY KEY  (issuer, date, hour, minute)	
+	PRIMARY KEY  ((issuer, date), hour, minute)	
 );
 
 create table if not exists trans_user_date_minute_counter (
@@ -115,7 +121,7 @@ create table if not exists trans_user_date_minute_counter (
 	hour int,
 	minute int,
 	total counter,
-	PRIMARY KEY  (user, date, hour, minute)	
+	PRIMARY KEY  ((user, date), hour, minute)	
 );
 
 create table if not exists trans_counter (
@@ -124,16 +130,35 @@ create table if not exists trans_counter (
 	PRIMARY KEY  (date)
 );
 
+
+
+
 truncate trans_issuer_date_minute_counter;
-truncate trans_user_date_minute_counter
-truncate blacklist_transactions;
-truncate blacklist_cards;
-truncate blacklist_issuers;
+truncate trans_user_date_minute_counter;
 truncate transactions;
+truncate latest_transactions;
 truncate credit_card_transactions_balance;
 truncate credit_card_transactions_by_issuer_date;
 truncate transaction_date_minute_counter;
+truncate trans_counter;
+
+truncate blacklist_transactions;
+truncate blacklist_cards;
+truncate blacklist_issuers;
+
 truncate users;
+truncate issuers;
 
 drop keyspace datastax_creditcard_demo;
+
+
+drop table transactions;
+drop table latest_transactions;
+drop table credit_card_transactions_balance;
+drop table credit_card_transactions_by_issuer_date;
+drop table transaction_date_minute_counter;
+drop table trans_issuer_date_minute_counter;
+drop table trans_user_date_minute_counter;
+drop table trans_counter;
+
 

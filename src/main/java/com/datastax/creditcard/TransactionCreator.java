@@ -1,5 +1,6 @@
 package com.datastax.creditcard;
 
+import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -10,8 +11,8 @@ import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.datastax.creditcard.dao.CreditCardDao;
 import com.datastax.creditcard.model.Transaction;
+import com.datastax.creditcard.services.CreditCardService;
 import com.datastax.demo.utils.PropertyHelper;
 import com.datastax.demo.utils.Timer;
 
@@ -20,78 +21,77 @@ public class TransactionCreator {
 	private static Logger logger = LoggerFactory.getLogger(TransactionCreator.class);
 	private DateTime date;
 	private static int BATCH = 10000;
-
+	
+	private DecimalFormat creditCardFormatter = new DecimalFormat("0000000000000000");
+	private static int noOfUsers = 10000000;
+	private static int noOfIssuers = 5000000;
+	private static int noOfLocations = 10000;
+				
 	public TransactionCreator() {
 
 		// Create yesterdays date at midnight
 		this.date = new DateTime().minusDays(30).withTimeAtStartOfDay();
 
 		String contactPointsStr = PropertyHelper.getProperty("contactPoints", "localhost");
-		String noOfCreditCardsStr = PropertyHelper.getProperty("noOfCreditCards", "1000");
-		String noOfTransactionsStr = PropertyHelper.getProperty("noOfTransactions", "50000");
+		CreditCardService service = new CreditCardService(contactPointsStr);
 
-		CreditCardDao dao = new CreditCardDao(contactPointsStr.split(","));
-
-		int noOfTransactions = Integer.parseInt(noOfTransactionsStr);
-		int noOfCreditCards = Integer.parseInt(noOfCreditCardsStr);
-
-		//Initialize credit cards;
-		dao.createCreditCards(noOfCreditCards);
-				
-		Timer timer = new Timer();
-		logger.info("Writing " + noOfTransactions + " transactions for " + noOfCreditCards + " credit cards.");
-		
 		int total = 0;
-		for (int i = 0; i < noOfTransactions; i++) {
-			dao.insertTransaction(createRandomTransaction(noOfCreditCards));
-
-			sleep(100);
-			if (i > 0 && i % BATCH == 0) {
+		long totalTime = 0;
+		while (true){
+			
+			Timer timer = new Timer();
+			service.processTransaction(this.createRandomTransaction());
+			timer.end();
+			
+			totalTime = totalTime + timer.getTimeTakenMillis();			
+			total ++;
+			
+			sleep(10);
+			if (total > 0 && total % BATCH == 0) {
 				total += BATCH;
-				logger.info("Wrote " + total + " records");
-				
-				//updateBalances(dao);	
+				logger.info("Wrote " + total + " Transactions at " + totalTime/total + " per ms.");
 			}
 		}
-		timer.end();
-		logger.info("Credit Cards Load took " + timer.getTimeTakenSeconds() + " secs.");
-		
-		updateBalances(dao);
 	}
 
 	private void sleep(int i) {
 		try {
 			Thread.sleep(i);
 		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
 
-	private void updateBalances(CreditCardDao dao) {
-		Timer timer1 = new Timer();
-		dao.updateCreditCardWithBalance();
-		timer1.end();
-		logger.info("Credit Cards balance update took " + timer1.getTimeTakenMillis() + " ms.");
-	}
+	private Transaction createRandomTransaction() {
 
-	private Transaction createRandomTransaction(int noOfCreditCards) {
-
-		int creditCardNo = new Double(Math.ceil(Math.random() * noOfCreditCards)).intValue();
+		int creditCardNo = new Double(Math.ceil(Math.random() * noOfUsers)).intValue();
 		int noOfItems = new Double(Math.ceil(Math.random() * 5)).intValue();
-		String issuer = issuers.get(new Double(Math.random() * issuers.size()).intValue());
-		String location = locations.get(new Double(Math.random() * locations.size()).intValue());
-
-		// create time by adding a random no of seconds to the midnight of
-		// yesterday.
-		date = date.plusSeconds(new Double(Math.random() * 100).intValue());
-
+		
+		int issuerNo = new Double(Math.random() * noOfIssuers).intValue();
+		int locationNo = new Double(Math.random() * noOfLocations).intValue();
+		
+		
+		String issuerId;
+		String location;
+		
+		if (issuerNo < issuers.size()){
+			issuerId = issuers.get(issuerNo);
+		}else{
+			issuerId = "Issuer" + issuerNo + 1;
+		}
+		
+		if (locationNo < locations.size()){
+			location = locations.get(locationNo);
+		}else{
+			location = "City-" + locationNo + 1;
+		}
+		
 		Transaction transaction = new Transaction();
 		createItemsAndAmount(noOfItems, transaction);
-		transaction.setCreditCardNo(new Integer(creditCardNo).toString());
-		transaction.setIssuer(issuer);
+		transaction.setCreditCardNo(creditCardFormatter.format(creditCardNo));
+		transaction.setIssuer(issuerId);
 		transaction.setTransactionId(UUID.randomUUID().toString());
-		transaction.setTransactionTime(date.toDate());
+		transaction.setTransactionTime(DateTime.now().toDate());
 		transaction.setLocation(location);
 
 		return transaction;
@@ -117,12 +117,10 @@ public class TransactionCreator {
 	 */
 	public static void main(String[] args) {
 		new TransactionCreator();
-
-		System.exit(0);
 	}
 
 	private List<String> locations = Arrays.asList("London", "Manchester", "Liverpool", "Glasgow", "Dundee",
-			"Birmingham");
+			"Birmingham", "New York", "Chicago", "Denver", "Los Angeles", "San Jose", "Santa Clara", "San Fransisco");
 
 	private List<String> issuers = Arrays.asList("Tesco", "Sainsbury", "Asda Wal-Mart Stores", "Morrisons",
 			"Marks & Spencer", "Boots", "John Lewis", "Waitrose", "Argos", "Co-op", "Currys", "PC World", "B&Q",

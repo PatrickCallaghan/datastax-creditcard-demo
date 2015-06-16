@@ -4,9 +4,10 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.UUID;
+import java.util.Map;
 
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
@@ -16,6 +17,7 @@ import com.datastax.creditcard.model.CreditBalance;
 import com.datastax.creditcard.model.Transaction;
 import com.datastax.creditcard.model.User;
 import com.datastax.driver.core.BatchStatement;
+import com.datastax.driver.core.BatchStatement.Type;
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.ConsistencyLevel;
 import com.datastax.driver.core.PreparedStatement;
@@ -29,7 +31,7 @@ import com.datastax.driver.core.Statement;
 public class CreditCardDao {
 
 	private static Logger logger = LoggerFactory.getLogger(CreditCardDao.class);
-	private static final int DEFAULT_LIMIT = 100;
+	private static final int DEFAULT_LIMIT = 10000;
 	private Session session;
 
 	private DateFormat dateFormatter = new SimpleDateFormat("yyyyMMdd");
@@ -39,23 +41,16 @@ public class CreditCardDao {
 
 	private static String transactionTable = keyspaceName + ".transactions";
 	private static String latestTransactionTable = keyspaceName + ".latest_transactions";
-	private static String transactionCounterTable = keyspaceName + ".transaction_date_minute_counter";
 	private static String userTable = keyspaceName + ".users";
 
 	private static final String GET_TRANSACTIONS_CCNO_AND_ID = "select transaction_id from " + balanceTable
 			+ " where cc_no = ?";
-
 	private static final String INSERT_INTO_TRANSACTION = "Insert into " + transactionTable
-			+ " (cc_no, transaction_id, items, location, issuer, amount, notes) values (?,now(),?,?,?,?,?);";
+			+ " (cc_no, transaction_time, transaction_id, items, location, issuer, amount) values (?,?,?,?,?,?,?);";
 	private static final String INSERT_INTO_LATEST_TRANSACTION = "Insert into " + latestTransactionTable
-			+ " (cc_no, transaction_id, items, location, issuer, amount, notes) values (?,now(),?,?,?,?,?)";
-
+			+ " (cc_no, transaction_time, transaction_id, items, location, issuer, amount) values (?,?,?,?,?,?,?) using ttl 864000";	
 	private static final String INSERT_INTO_ISSUER = "insert into " + issuerTable
-			+ "(issuer, date, transaction_id, cc_no, amount) values (?,?, now(),?,?)";
-
-	private static final String UPDATE_COUNTER = "update " + transactionCounterTable + " "
-			+ "set  total_for_minute = total_for_minute + 1 where date=? AND hour=? AND minute=?";
-
+			+ "(issuer, date, transaction_id, cc_no, transaction_time, amount) values (?,?,?,?,?,?)";
 	private static final String UPDATE_BALANCE = "update " + balanceTable
 			+ " set balance = ?, balance_at = ?  where cc_no = ?";
 
@@ -63,15 +58,14 @@ public class CreditCardDao {
 			+ " set status = ?, notes = ? where transaction_id = ?";
 	private static final String UPDATE_LATEST_TRANSACTION_STATUS = "update " + latestTransactionTable
 			+ " set status = ?, notes = ? where cc_no = ? and transaction_id = ?";
-
 	private static final String INSERT_BALANCE = "insert into " + balanceTable
 			+ "(cc_no, balance, balance_at) values (?,?,?)";
 
 	private static final String GET_ALL_ISSUER_BY_DATE = "select transaction_id,amount,cc_no   from " + issuerTable
 			+ " where issuer = ? and date = ?";
 	private static final String GET_ALL_TRANSACTIONS_BY_TIME = "select transaction_id,amount,cc_no from "
-			+ balanceTable + " where cc_no = ? and transaction_id > maxTimeuuid(?) and transaction_id < minTimeuuid(?) LIMIT ?";
-	private static final String GET_TRANSACTIONS_BY_ID = "select dateof(transaction_id) as date,transaction_id,amount,cc_no,location,items,issuer,status,notes from "
+			+ balanceTable + " where cc_no = ? and transaction_id > ? and transaction_id < ? LIMIT ?";
+	private static final String GET_TRANSACTIONS_BY_ID = "select transaction_id as date,transaction_id,amount,cc_no,location,items,issuer,status,notes from "
 			+ transactionTable + " where transaction_id = ?";
 
 	private static final String GET_ALL_CREDIT_CARDS = "select cc_no, balance_at, balance from " + balanceTable;
@@ -80,7 +74,6 @@ public class CreditCardDao {
 	private PreparedStatement insertTransactionStmt;
 	private PreparedStatement insertLatestTransactionStmt;
 	private PreparedStatement insertIssuerStmt;
-	private PreparedStatement updateCounter;
 	private PreparedStatement updateBalance;
 	private PreparedStatement insertBalance;
 	private PreparedStatement getTransTime;
@@ -107,7 +100,6 @@ public class CreditCardDao {
 			this.insertTransactionStmt = session.prepare(INSERT_INTO_TRANSACTION);
 			this.insertLatestTransactionStmt = session.prepare(INSERT_INTO_LATEST_TRANSACTION);
 			this.insertIssuerStmt = session.prepare(INSERT_INTO_ISSUER);
-			this.updateCounter = session.prepare(UPDATE_COUNTER);
 
 			this.updateBalance = session.prepare(UPDATE_BALANCE);
 			this.insertBalance = session.prepare(INSERT_BALANCE);
@@ -124,8 +116,7 @@ public class CreditCardDao {
 			this.insertLatestTransactionStmt.setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
 			this.insertTransactionStmt.setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
 			this.insertIssuerStmt.setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
-			this.updateCounter.setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
-
+			
 			this.updateBalance.setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
 			this.getTransTime.setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
 			this.getUser.setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
@@ -138,8 +129,11 @@ public class CreditCardDao {
 		}
 	}
 
+	public void saveTransaction(Transaction transaction) {
+		insertTransaction(transaction);
+	}
+	
 	public void createCreditCards(int cards) {
-
 		for (int i = 1; i < cards + 1; i++) {
 			session.execute(this.insertBalance.bind("" + i, 0d, DateTime.parse("2001-01-01").toDate()));
 		}
@@ -160,22 +154,20 @@ public class CreditCardDao {
 	public void insertTransaction(Transaction transaction) {
 
 		DateTime dateTime = new DateTime(transaction.getTransactionTime());
-
-		int minute = dateTime.getMinuteOfHour();
-		int hour = dateTime.getHourOfDay();
 		String date = dateFormatter.format(dateTime.toDate());
 
-		BatchStatement batch = new BatchStatement();
+		BatchStatement batch = new BatchStatement(Type.LOGGED);
 
 		batch.add(this.insertTransactionStmt.bind(transaction.getCreditCardNo(), transaction.getTransactionTime(),
+				transaction.getTransactionId(), transaction.getItems(), transaction.getLocation(),
+				transaction.getIssuer(), transaction.getAmount()));
+		batch.add(this.insertLatestTransactionStmt.bind(transaction.getCreditCardNo(), transaction.getTransactionTime(),
 				transaction.getTransactionId(), transaction.getItems(), transaction.getLocation(),
 				transaction.getIssuer(), transaction.getAmount()));
 		batch.add(this.insertIssuerStmt.bind(transaction.getIssuer(), date, transaction.getTransactionId(),
 				transaction.getCreditCardNo(), transaction.getTransactionTime(), transaction.getAmount()));
 
 		session.execute(batch);
-
-		session.execute(this.updateCounter.bind(date, hour, minute));
 	}
 
 	public User getUser(String userId) {
@@ -288,7 +280,7 @@ public class CreditCardDao {
 		t.setIssuer(row.getString("issuer"));
 		t.setItems(row.getMap("items", String.class, Double.class));
 		t.setLocation(row.getString("location"));
-		t.setTransactionId(row.getUUID("transaction_id").toString());
+		t.setTransactionId(row.getString("transaction_id"));
 		t.setTransactionTime(row.getDate("date"));
 		t.setNotes(row.getString("notes"));
 		t.setStatus(row.getString("status"));
@@ -312,14 +304,12 @@ public class CreditCardDao {
 		return transactions;
 	}
 
-
-
-	public List<Transaction> getTransactions(List<UUID> transactionIds) {
+	public List<Transaction> getTransactions(List<String> transactionIds) {
 
 		List<Transaction> transactions = new ArrayList<Transaction>();
 		List<ResultSetFuture> results = new ArrayList<ResultSetFuture>();
 
-		for (UUID transactionId : transactionIds) {
+		for (String transactionId : transactionIds) {
 
 			results.add(this.session.executeAsync(getTransactionById.bind(transactionId)));
 		}
@@ -332,6 +322,24 @@ public class CreditCardDao {
 	}
 
 
+	public Map<String,String> getCreditCardUserIdMap() {
+		
+		Statement stmt = new SimpleStatement ("select cc_no, user_id from " + userTable);
+		stmt.setFetchSize(DEFAULT_LIMIT);
+		ResultSet rs = this.session.execute(stmt);		
+		Iterator<Row> iter = rs.iterator();
+		
+		Map<String,String> ccNoUserIdMap = new HashMap<String, String>();
+		
+		while (iter.hasNext()){
+			
+			Row row = iter.next();
+			ccNoUserIdMap.put(row.getString("cc_no"), row.getString("user_id"));
+		}
+		
+		return ccNoUserIdMap;
+	}
+	
 	public List<String> getCreditCardNosIter() {
 		
 		Statement stmt = new SimpleStatement ("select * from " + userTable);
@@ -353,17 +361,11 @@ public class CreditCardDao {
 		return creditCardNos;
 	}
 
-	//Delegated methods
-	public List<Transaction> getBlacklistTransactions() {
-		return this.blackListDao.getBlacklistTransactions();
+	public CounterDao getCounterDao(){
+		return this.counterDao;
 	}
 	
-	public void insertBlacklistIssuer(String issuer, String city, double amount) {
-		this.blackListDao.insertBlacklistIssuer(issuer, city, amount);
+	public BlackListDao getBlackListDao(){
+		return this.blackListDao;
 	}
-
-	public void insertBlacklistCard(String cc_no, double amount) {
-		this.blackListDao.insertBlacklistCard(cc_no, amount);
-	}
-
 }

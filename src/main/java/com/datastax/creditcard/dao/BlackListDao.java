@@ -3,20 +3,16 @@ package com.datastax.creditcard.dao;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.joda.time.DateTime;
-
 import com.datastax.creditcard.model.BlacklistIssuer;
 import com.datastax.creditcard.model.Transaction;
-import com.datastax.driver.core.BoundStatement;
-import com.datastax.driver.core.ConsistencyLevel;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 
@@ -37,16 +33,20 @@ public class BlackListDao {
 	private static String blacklistTransactions = keyspaceName + ".blacklist_transactions";
 
 	private static final String GET_ALL_BLACKLIST_TRANSACTIONS = "select * from " + blacklistTransactions
-			+ " where dummy = 'dummy'";
+			+ " where date = ?";
 	private static final String GET_ALL_BLACKLIST_CARDS = "select * from " + blacklistCards;
 	private static final String GET_ALL_BLACKLIST_ISSUERS = "select * from " + blacklistIssuers;
 	private static final String INSERT_INTO_BLACKLIST_ISSUERS = "insert into " + blacklistIssuers
 			+ "(issuer, city, amount) values (?,?,?);";
 	private static final String INSERT_INTO_BLACKLIST_CARDS = "insert into " + blacklistCards
-			+ "(dummy, cc_no, amount) values ('dummy',?,?);";
+			+ "(cc_no, amount) values (?,?);";
+	private static final String INSERT_INTO_BLACKLIST_TRANSACTIONS = "insert into " + blacklistTransactions
+			+ "(date, transaction_time, transaction_id) values (?,?,?);";
+	
 
 	private PreparedStatement insertBlacklistIssuers;
 	private PreparedStatement insertBlacklistCards;
+	private PreparedStatement insertBlacklistTransactions;
 	private PreparedStatement getBlacklistIssuers;
 	private PreparedStatement getBlacklistCards;
 	private PreparedStatement getBlacklistTransactions;
@@ -56,23 +56,28 @@ public class BlackListDao {
 		
 		this.insertBlacklistIssuers = session.prepare(INSERT_INTO_BLACKLIST_ISSUERS);
 		this.insertBlacklistCards = session.prepare(INSERT_INTO_BLACKLIST_CARDS);
+		this.insertBlacklistTransactions = session.prepare(INSERT_INTO_BLACKLIST_TRANSACTIONS);
+		
 		this.getBlacklistIssuers = session.prepare(GET_ALL_BLACKLIST_ISSUERS);
 		this.getBlacklistCards = session.prepare(GET_ALL_BLACKLIST_CARDS);
-		this.getBlacklistTransactions = session.prepare(GET_ALL_BLACKLIST_TRANSACTIONS);
-		
-		this.getBlacklistTransactions.setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
+		this.getBlacklistTransactions = session.prepare(GET_ALL_BLACKLIST_TRANSACTIONS);		
 	}
 	
-	public void insertBlacklistIssuer(String issuer, String city, double amount) {
+	public void insertBlacklistIssuer(Date date, String issuer, String city, double amount) {
 
 		session.execute(this.insertBlacklistIssuers.bind(issuer, city, amount));
 	}
 
-	public void insertBlacklistCard(String cc_no, double amount) {
+	public void insertBlacklistCard(Date date, String cc_no, double amount) {
 
 		session.execute(this.insertBlacklistCards.bind(cc_no, amount));
 	}
 
+	public void insertBlacklistTransaction(Date date, Transaction transaction) {
+
+		session.execute(this.insertBlacklistTransactions.bind(formatDate(date), transaction.getTransactionTime(), transaction.getTransactionId()));
+	}
+	
 	public Map<String, Double> getBlacklistCards() {
 
 		ResultSet rs = this.session.execute(this.getBlacklistCards.bind());
@@ -89,7 +94,7 @@ public class BlackListDao {
 		return blacklistCards;
 	}
 	
-	public List<BlacklistIssuer> getBlacklistIssuers() {
+	public Map<String, BlacklistIssuer> getBlacklistIssuers() {
 
 		ResultSet rs = this.session.execute(this.getBlacklistIssuers.bind());
 		Iterator<Row> iter = rs.iterator();
@@ -114,22 +119,26 @@ public class BlackListDao {
 			blacklistIssuers.put(issuer, blacklistIssuer);
 		}
 
-		return new ArrayList<BlacklistIssuer>(blacklistIssuers.values());
+		return blacklistIssuers;
 	}
 
-	public List<Transaction> getBlacklistTransactions() {
-		List<Transaction> transactions = new ArrayList<Transaction>();
-		ResultSet rs = this.session.execute(this.getBlacklistTransactions.bind());
+	public List<String> getBlacklistTransactions(Date date) {
+		List<String> transactions = new ArrayList<String>();
+		ResultSet rs = this.session.execute(this.getBlacklistTransactions.bind(formatDate(date)));
 		Iterator<Row> iter = rs.iterator();
 
 		while (iter.hasNext()) {
 
 			Row row = iter.next();
-			transactions.add(rowToTransaction(row));
+			transactions.add(row.getString("transaction_id"));
 		}
 
 		return transactions;
 	}	
+	
+	private String formatDate(Date date){
+		return this.dateFormatter.format(date);
+	}
 
 	private Transaction rowToTransaction(Row row) {
 
