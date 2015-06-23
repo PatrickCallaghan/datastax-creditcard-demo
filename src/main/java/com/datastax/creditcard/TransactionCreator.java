@@ -2,6 +2,7 @@ package com.datastax.creditcard;
 
 import java.text.DecimalFormat;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,21 +31,40 @@ public class TransactionCreator {
 	public TransactionCreator() {
 
 		String contactPointsStr = PropertyHelper.getProperty("contactPoints", "localhost");
+		String noOfDaysStr = PropertyHelper.getProperty("contactPoints", "0");
+		String noOfTransactionsPerSecStr = PropertyHelper.getProperty("contactPoints", "10");
+		
+		int noOfDays = Integer.parseInt(noOfDaysStr);
+		int noOfTransactionsPerSec = Integer.parseInt(noOfTransactionsPerSecStr);
+		
 		service = new CreditCardService(contactPointsStr);
 		service.loadRefData();
 
 		int total = 0;
 		long totalTime = 0;
+		
+		//Historic data
+		if (noOfDays > 0){
+			
+			DateTime date = DateTime.now().minusDays(noOfDays);
+			
+			while (date.isBefore(DateTime.now())){				
+				date = date.plusMillis(new Double(Math.random() * 100).intValue());
+				service.processTransaction(this.createRandomTransaction(date.toDate()));
+			}		
+		}
+			
 		while (true){
 			
 			Timer timer = new Timer();
-			service.processTransaction(this.createRandomTransaction());
+			service.processTransaction(this.createRandomTransaction(new Date()));
 			timer.end();
 			
 			totalTime = totalTime + timer.getTimeTakenMillis();			
 			total ++;
 			
-			sleep(10);
+			sleep(1000/noOfTransactionsPerSec);
+			
 			if (total > 0 && total % BATCH == 0) {
 				total += BATCH;
 				logger.info("Wrote " + total + " Transactions at " + totalTime/total + " per ms.");
@@ -60,15 +80,14 @@ public class TransactionCreator {
 		}
 	}
 
-	private Transaction createRandomTransaction() {
+	private Transaction createRandomTransaction(Date date) {
 
 		int creditCardNo = new Double(Math.ceil(Math.random() * noOfUsers)).intValue();
 		int noOfItems = new Double(Math.ceil(Math.random() * 5)).intValue();
 		
 		int issuerNo = new Double(Math.random() * noOfIssuers).intValue();
 		int locationNo = new Double(Math.random() * noOfLocations).intValue();
-		
-		
+				
 		String issuerId;
 		String location;
 		
@@ -89,7 +108,7 @@ public class TransactionCreator {
 		transaction.setCreditCardNo(creditCardFormatter.format(creditCardNo));
 		transaction.setIssuer(issuerId);
 		transaction.setTransactionId(UUID.randomUUID().toString());
-		transaction.setTransactionTime(DateTime.now().toDate());
+		transaction.setTransactionTime(date);
 		transaction.setLocation(location);
 		transaction.setUserId(service.getUserIdFromCCNo(creditCardFormatter.format(creditCardNo)));
 		transaction.setStatus(Status.APPROVED.toString());

@@ -7,7 +7,7 @@
 	<artifactId>datastax-creditcard-demo</artifactId>
 	<version>0.1-SNAPSHOT</version>
 	<packaging>jar</packaging>
-	
+
 	<dependencies>
 		<dependency>
 			<groupId>com.datastax.cassandra</groupId>
@@ -86,6 +86,11 @@
 			<groupId>commons-logging</groupId>
 			<artifactId>commons-logging</artifactId>
 			<version>1.2</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.solr</groupId>
+			<artifactId>solr-solrj</artifactId>
+			<version>4.10.4</version>
 		</dependency>
 	</dependencies>
 
