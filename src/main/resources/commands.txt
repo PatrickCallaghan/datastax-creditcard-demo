@@ -4,7 +4,7 @@
 
 insert into blacklist_issuers (issuer, city, amount) values ('Issuer7','City-4986',450);
 insert into blacklist_issuers (issuer, city, amount) values ('Issuer7','City-4986',50);
-insert into blacklist_issuers (issuer, city, amount) values ('Issuer50000','City-1969',200);
+insert into blacklist_issuers (issuer, city, amount) Blvalues ('Issuer50000','City-1969',200);
 
 insert into blacklist_cards (dummy, cc_no, amount) values ('dummy', '0000000005702649', 1000);
 insert into blacklist_cards (dummy, cc_no, amount) values ('dummy', '0000000004737244', 1000);

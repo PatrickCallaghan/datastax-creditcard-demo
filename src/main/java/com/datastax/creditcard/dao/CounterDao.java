@@ -9,8 +9,11 @@ import java.util.List;
 import java.util.Map;
 
 import org.joda.time.DateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.datastax.creditcard.model.Transaction;
+import com.datastax.creditcard.services.CreditCardService;
 import com.datastax.driver.core.BatchStatement;
 import com.datastax.driver.core.BatchStatement.Type;
 import com.datastax.driver.core.BoundStatement;
@@ -28,6 +31,7 @@ import com.datastax.driver.core.Session;
 public class CounterDao {
 
 	private Session session;
+	private static Logger logger = LoggerFactory.getLogger(CounterDao.class);
 
 	private DateFormat dateFormatter = new SimpleDateFormat("yyyyMMdd");
 	private DateFormat dateTimeFormatter = new SimpleDateFormat("yyyyMMdd-hh:mm:ss");
@@ -111,17 +115,21 @@ public class CounterDao {
 		this.session.execute(bound.bind(date));		
 	}
 	
-	public Map<String, Integer> getTransCounterLastNDays(DateTime dateTime, int nDays){
+	public Map<String, Long> getTransCounterLastNDays(DateTime dateTime, int nDays){
 		
 		List<ResultSetFuture> futures = new ArrayList<ResultSetFuture>();		
-		Map<String, Integer> dateCountMap = new HashMap<String, Integer>();
+		Map<String, Long> dateCountMap = new HashMap<String, Long>();
 				
+		
+		
 		for (int i = 0 ; i < nDays; i++){
 			BoundStatement bound = new BoundStatement(this.getCountTableStmt);
 			
-			dateTime.minusDays(i);
-			String date = dateFormatter.format(dateTime.toDate());
-		
+			DateTime newDate = dateTime.minusDays(i);
+						
+			String date = dateFormatter.format(newDate.toDate());
+			logger.info("binding :" + date);
+			
 			futures.add(this.session.executeAsync(bound.bind(date)));			
 		}
 				
@@ -129,7 +137,10 @@ public class CounterDao {
 			
 		    ResultSet rs = future.getUninterruptibly();
 		    Row row = rs.one();
-		    dateCountMap.put(row.getString("date"), row.getInt("total"));
+		    
+		    if (row != null){
+		    	dateCountMap.put(row.getString("date"), row.getLong("total"));
+		    }
 		}
 		
 		return dateCountMap;		
@@ -204,7 +215,7 @@ public class CounterDao {
 	}
 	
 	public static void main(String[] args) {
-	
+		
 	}
 
 }

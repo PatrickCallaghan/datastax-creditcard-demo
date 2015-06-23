@@ -9,8 +9,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.datastax.creditcard.model.BlacklistIssuer;
 import com.datastax.creditcard.model.Transaction;
+import com.datastax.driver.core.BatchStatement;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
@@ -25,6 +29,7 @@ public class BlackListDao {
 
 	private Session session;
 
+	private static Logger logger = LoggerFactory.getLogger(BlackListDao.class);
 	private DateFormat dateFormatter = new SimpleDateFormat("yyyyMMdd");
 	
 	private static String keyspaceName = "datastax_creditcard_demo";
@@ -35,11 +40,12 @@ public class BlackListDao {
 	private static final String GET_ALL_BLACKLIST_TRANSACTIONS = "select * from " + blacklistTransactions
 			+ " where date = ?";
 	private static final String GET_ALL_BLACKLIST_CARDS = "select * from " + blacklistCards;
-	private static final String GET_ALL_BLACKLIST_ISSUERS = "select * from " + blacklistIssuers;
+	private static final String GET_ALL_BLACKLIST_ISSUERS = "select * from " + blacklistIssuers
+			;
 	private static final String INSERT_INTO_BLACKLIST_ISSUERS = "insert into " + blacklistIssuers
 			+ "(issuer, city, amount) values (?,?,?);";
 	private static final String INSERT_INTO_BLACKLIST_CARDS = "insert into " + blacklistCards
-			+ "(cc_no, amount) values (?,?);";
+			+ "(dummy, cc_no, amount) values ('dummy', ?,?);";
 	private static final String INSERT_INTO_BLACKLIST_TRANSACTIONS = "insert into " + blacklistTransactions
 			+ "(date, transaction_time, transaction_id) values (?,?,?);";
 	
@@ -77,6 +83,12 @@ public class BlackListDao {
 
 		session.execute(this.insertBlacklistTransactions.bind(formatDate(date), transaction.getTransactionTime(), transaction.getTransactionId()));
 	}
+
+	public void addInsertBlacklistTransactionToBatch(BatchStatement batch, Date date, Transaction transaction) {
+
+		batch.add(this.insertBlacklistTransactions.bind(formatDate(date), transaction.getTransactionTime(), transaction.getTransactionId()));
+	}
+
 	
 	public Map<String, Double> getBlacklistCards() {
 
@@ -128,7 +140,6 @@ public class BlackListDao {
 		Iterator<Row> iter = rs.iterator();
 
 		while (iter.hasNext()) {
-
 			Row row = iter.next();
 			transactions.add(row.getString("transaction_id"));
 		}
@@ -138,21 +149,5 @@ public class BlackListDao {
 	
 	private String formatDate(Date date){
 		return this.dateFormatter.format(date);
-	}
-
-	private Transaction rowToTransaction(Row row) {
-
-		Transaction t = new Transaction();
-		t.setAmount(row.getDouble("amount"));
-		t.setCreditCardNo(row.getString("cc_no"));
-		t.setIssuer(row.getString("issuer"));
-		t.setItems(row.getMap("items", String.class, Double.class));
-		t.setLocation(row.getString("location"));
-		t.setTransactionId(row.getUUID("transaction_id").toString());
-		t.setTransactionTime(row.getDate("date"));
-		t.setNotes(row.getString("notes"));
-		t.setStatus(row.getString("status"));
-
-		return t;
 	}
 }

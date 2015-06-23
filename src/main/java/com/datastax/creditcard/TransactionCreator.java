@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.datastax.creditcard.model.Transaction;
+import com.datastax.creditcard.model.Transaction.Status;
 import com.datastax.creditcard.services.CreditCardService;
 import com.datastax.demo.utils.PropertyHelper;
 import com.datastax.demo.utils.Timer;
@@ -19,21 +20,18 @@ import com.datastax.demo.utils.Timer;
 public class TransactionCreator {
 
 	private static Logger logger = LoggerFactory.getLogger(TransactionCreator.class);
-	private DateTime date;
 	private static int BATCH = 10000;
 	
 	private DecimalFormat creditCardFormatter = new DecimalFormat("0000000000000000");
 	private static int noOfUsers = 10000000;
 	private static int noOfIssuers = 5000000;
 	private static int noOfLocations = 10000;
-				
+	private CreditCardService service;		
 	public TransactionCreator() {
 
-		// Create yesterdays date at midnight
-		this.date = new DateTime().minusDays(30).withTimeAtStartOfDay();
-
 		String contactPointsStr = PropertyHelper.getProperty("contactPoints", "localhost");
-		CreditCardService service = new CreditCardService(contactPointsStr);
+		service = new CreditCardService(contactPointsStr);
+		service.loadRefData();
 
 		int total = 0;
 		long totalTime = 0;
@@ -77,13 +75,13 @@ public class TransactionCreator {
 		if (issuerNo < issuers.size()){
 			issuerId = issuers.get(issuerNo);
 		}else{
-			issuerId = "Issuer" + issuerNo + 1;
+			issuerId = "Issuer" + (issuerNo + 1);
 		}
 		
 		if (locationNo < locations.size()){
 			location = locations.get(locationNo);
 		}else{
-			location = "City-" + locationNo + 1;
+			location = "City-" + (locationNo + 1);
 		}
 		
 		Transaction transaction = new Transaction();
@@ -93,6 +91,8 @@ public class TransactionCreator {
 		transaction.setTransactionId(UUID.randomUUID().toString());
 		transaction.setTransactionTime(DateTime.now().toDate());
 		transaction.setLocation(location);
+		transaction.setUserId(service.getUserIdFromCCNo(creditCardFormatter.format(creditCardNo)));
+		transaction.setStatus(Status.APPROVED.toString());
 
 		return transaction;
 	}

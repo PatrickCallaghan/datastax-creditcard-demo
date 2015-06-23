@@ -85,9 +85,9 @@ public class CreditCardWS {
 	@Path("/post/update/transaction")
 	@Produces(MediaType.APPLICATION_JSON)
 	public Response updateStatusNotes(@QueryParam("status") String status, @QueryParam("notes") String notes,
-			@QueryParam("creditCardNo") String creditCardNo, @QueryParam("transactionId") String transactionId) {
+			@QueryParam("transactionId") String transactionId) {
 		
-		this.service.updateStatusNotes(status, notes, creditCardNo, transactionId);
+		this.service.updateStatusNotes(status, notes, transactionId);
 		
 		return Response.status(201).build();
 	}	

@@ -6,6 +6,7 @@ import java.util.Map;
 public class Transaction {
 
 	private String creditCardNo;
+	private String userId;
 	private Date transactionTime;
 	private String transactionId;
 	private Map<String, Double> items;
@@ -76,6 +77,9 @@ public class Transaction {
 	}
 
 	public String getNotes() {
+		if(notes==null){
+			return "";
+		}
 		return notes;
 	}
 
@@ -84,6 +88,10 @@ public class Transaction {
 	}
 
 	public String getStatus() {
+		
+		if(status==null){
+			return "";
+		}
 		return status;
 	}
 
@@ -93,12 +101,20 @@ public class Transaction {
 	
 	@Override
 	public String toString() {
-		return "Transaction [creditCardNo=" + creditCardNo + ", transactionTime=" + transactionTime
-				+ ", transactionId=" + transactionId + ", items=" + items + ", location=" + location + ", issuer="
-				+ issuer + ", amount=" + amount + "]";
+		return "Transaction [creditCardNo=" + creditCardNo + ", userId=" + userId + ", transactionTime="
+				+ transactionTime + ", transactionId=" + transactionId + ", items=" + items + ", location=" + location
+				+ ", issuer=" + issuer + ", amount=" + amount + ", status=" + status + ", notes=" + notes + "]";
 	}
-	
+
+	public String getUserId() {
+		return userId;
+	}
+
+	public void setUserId(String userId) {
+		this.userId = userId;
+	}
+
 	public enum Status {
-		CHECK, PENDING, APPROVED, DECLINED
+		CHECK, APPROVED, DECLINED, CLIENT_APPROVED, CLIENT_DECLINED, CLIENT_APPROVAL
 	}
 }

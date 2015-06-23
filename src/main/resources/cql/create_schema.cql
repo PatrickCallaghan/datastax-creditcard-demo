@@ -30,10 +30,12 @@ create table if not exists latest_transactions(
 	items map<text, double>,
 	issuer text,
 	amount double,
+	user_id text,
 	status text,
 	notes text,
 	PRIMARY KEY (cc_no, transaction_id)
 ) WITH compaction= { 'class': 'MemoryOnlyStrategy' }
+	 AND default_time_to_live = 604800;
      AND compression = {'sstable_compression' : ''}
      AND caching = {'keys':'NONE', 'rows_per_partition':'NONE'};
 
@@ -41,6 +43,7 @@ create table if not exists transactions(
 	cc_no text,
 	transaction_time timestamp,
  	transaction_id text,
+ 	user_id text,
 	location text,
 	items map<text, double>,
 	issuer text,
@@ -54,7 +57,7 @@ create table if not exists blacklist_transactions(
 	date text,
 	transaction_time timestamp,
  	transaction_id text,
-	PRIMARY KEY (date, timestamp)
+	PRIMARY KEY (date, transaction_time)
 ) WITH CLUSTERING ORDER BY (transaction_time DESC);
      
 create table if not exists users(
