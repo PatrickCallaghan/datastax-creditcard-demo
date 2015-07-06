@@ -20,40 +20,57 @@ import com.datastax.demo.utils.Timer;
 
 public class TransactionCreator {
 
+	private static final int DEFAULT_DAY_IN_MILLIS = 86400000;
+	private static final int DEFAULT_SLEEP = 2000;
 	private static Logger logger = LoggerFactory.getLogger(TransactionCreator.class);
-	private static int BATCH = 10000;
+	private static int BATCH = 25000;
 	
 	private DecimalFormat creditCardFormatter = new DecimalFormat("0000000000000000");
 	private static int noOfUsers = 10000000;
 	private static int noOfIssuers = 5000000;
 	private static int noOfLocations = 10000;
-	private CreditCardService service;		
+	private int RANDOM = 200;
+	private CreditCardService service;
+	
+	
 	public TransactionCreator() {
 
 		String contactPointsStr = PropertyHelper.getProperty("contactPoints", "localhost");
-		String noOfDaysStr = PropertyHelper.getProperty("contactPoints", "0");
-		String noOfTransactionsPerSecStr = PropertyHelper.getProperty("contactPoints", "10");
+		String noOfDaysStr = PropertyHelper.getProperty("noOfDays", "30");
+		String noOfTransactionsPerDayStr = PropertyHelper.getProperty("noOfTransactionsPerDay", "500000");
 		
 		int noOfDays = Integer.parseInt(noOfDaysStr);
-		int noOfTransactionsPerSec = Integer.parseInt(noOfTransactionsPerSecStr);
+		int noOfTransactionsPerDay = Integer.parseInt(noOfTransactionsPerDayStr);
 		
 		service = new CreditCardService(contactPointsStr);
-		service.loadRefData();
+		//service.loadRefData();
 
 		int total = 0;
 		long totalTime = 0;
+		
+		getRANDOM(noOfTransactionsPerDay);
 		
 		//Historic data
 		if (noOfDays > 0){
 			
 			DateTime date = DateTime.now().minusDays(noOfDays);
 			
+			logger.info("Processing from date : " + date);
+			
 			while (date.isBefore(DateTime.now())){				
-				date = date.plusMillis(new Double(Math.random() * 100).intValue());
+				date = date.plusMillis(new Double(Math.random() * RANDOM).intValue());
 				service.processTransaction(this.createRandomTransaction(date.toDate()));
+				total ++;
+				
+				if (total > 0 && total % BATCH == 0) {
+					logger.info("Wrote " + total + " Transactions at " + totalTime/total + " per ms (" + date + ")");
+					sleep(DEFAULT_SLEEP);
+					getRANDOM (noOfTransactionsPerDay);
+				}
 			}		
 		}
 			
+		total = 0;
 		while (true){
 			
 			Timer timer = new Timer();
@@ -63,13 +80,20 @@ public class TransactionCreator {
 			totalTime = totalTime + timer.getTimeTakenMillis();			
 			total ++;
 			
-			sleep(1000/noOfTransactionsPerSec);
+			sleep(DEFAULT_DAY_IN_MILLIS/noOfTransactionsPerDay); //Sleep for 
 			
 			if (total > 0 && total % BATCH == 0) {
 				total += BATCH;
 				logger.info("Wrote " + total + " Transactions at " + totalTime/total + " per ms.");
 			}
 		}
+	}
+
+	private void getRANDOM(int noOfTransactionsPerDay) {
+		
+		double divisor = noOfTransactionsPerDay * (Math.random() + .5);
+		
+		RANDOM = new Double(86400000/divisor).intValue();
 	}
 
 	private void sleep(int i) {
@@ -110,7 +134,7 @@ public class TransactionCreator {
 		transaction.setTransactionId(UUID.randomUUID().toString());
 		transaction.setTransactionTime(date);
 		transaction.setLocation(location);
-		transaction.setUserId(service.getUserIdFromCCNo(creditCardFormatter.format(creditCardNo)));
+		transaction.setUserId(creditCardNo + "");
 		transaction.setStatus(Status.APPROVED.toString());
 
 		return transaction;

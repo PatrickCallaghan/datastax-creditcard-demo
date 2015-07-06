@@ -5,7 +5,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -28,6 +27,8 @@ import com.datastax.creditcard.model.Issuer;
 import com.datastax.creditcard.model.Transaction;
 import com.datastax.creditcard.model.Transaction.Status;
 import com.datastax.creditcard.model.User;
+import com.datastax.creditcard.model.UserRule;
+import com.datastax.creditcard.rules.DuplicateTransactionRule;
 import com.datastax.creditcard.rules.IssuerBlackListRule;
 import com.datastax.creditcard.rules.Rule;
 import com.datastax.creditcard.rules.TransactionAmountRule;
@@ -68,6 +69,9 @@ public class CreditCardService {
 
 	private static final int DEFAULT_PAGE = 100;
 	private CreditCardDao dao;
+	private EmailService emailService;
+	private UserRuleService userRuleService;
+	
 	private SolrServer solr = new HttpSolrServer("http://localhost:8983/solr/datastax_creditcard_demo.users");
 	private List<Rule> rules = new ArrayList<Rule>();
 
@@ -77,12 +81,9 @@ public class CreditCardService {
 
 	private Rule issuerBlackListRule = new IssuerBlackListRule();
 	private Rule transactionAmountRule = new TransactionAmountRule();
+	private Rule duplicateTransactionRule = new DuplicateTransactionRule();
 
 	public CreditCardService() {
-		rules = new ArrayList<Rule>();
-		rules.add(issuerBlackListRule);
-		rules.add(transactionAmountRule);
-
 		this.dao = new CreditCardDao(new String[] { "localhost" });
 		init();
 	}
@@ -93,6 +94,14 @@ public class CreditCardService {
 	}
 
 	private void init() {
+		this.rules = new ArrayList<Rule>();
+		this.rules.add(issuerBlackListRule);
+		this.rules.add(transactionAmountRule);
+		this.rules.add(duplicateTransactionRule);
+		
+		this.emailService = new EmailService();
+		this.userRuleService = new UserRuleService();
+
 		startScheduler();
 	}
 
@@ -129,15 +138,9 @@ public class CreditCardService {
 
 	public Transaction checkTransaction(Transaction transaction) {
 
-		processRules(transaction);
+		List<UserRule> userRules = this.dao.getUserRulesDao().getAllUserRules(transaction.getUserId());
 		
-		logger.info("Checked in Service : " + transaction.toString());
-
-		if (transaction.getStatus().equals(Status.CHECK.toString())) {
-
-			logger.info("Inserting : " + transaction.toString());
-			dao.insertTransaction(transaction);
-		}
+		processRules(transaction, userRules);
 
 		return transaction;
 	}
@@ -145,11 +148,28 @@ public class CreditCardService {
 	public String getUserIdFromCCNo(String ccNo) {
 		return this.ccNoUserIdMap.get(ccNo);
 	}
+	
+	public void confirmTransaction(String transactionId) {
+		this.updateStatusNotes(Status.CLIENT_APPROVED.toString(), "Client Approved by WS at " + new Date().toString(), transactionId);
+	}
 
 	public Transaction processTransaction(Transaction transaction) {
+		
+		if(!validate(transaction)){
+			return transaction;
+		}
+		
+		List<UserRule> userRules = this.dao.getUserRulesDao().getAllUserRules(transaction.getUserId());
+		
+		logger.info("Got " + userRules.size() + " for user " + transaction.getUserId());
 
 		if (!transaction.getStatus().equals(Status.CLIENT_APPROVED.toString())) {
-			processRules(transaction);			
+			processRules(transaction, userRules);			
+		}
+
+		if (transaction.getStatus().equals(Status.CLIENT_APPROVAL.toString())) {
+			User user = this.getUserById(transaction.getUserId());
+			this.emailService.sendClientEmail(user, transaction);
 		}
 
 		dao.saveTransaction(transaction);
@@ -159,11 +179,32 @@ public class CreditCardService {
 	}
 
 
-	private void processRules(Transaction transaction) {
+	private boolean validate(Transaction transaction) {
+		if (transaction.getUserId() == null || transaction.getUserId().equals(""))
+			return false;
 		
-		for (Rule rule : rules ){
-			
-			Status status = rule.processRule(transaction);
+		return true;
+	}
+
+	private void processRules(Transaction transaction, List<UserRule> userRules) {
+		
+		//Always going to get the last 7 days for the demo
+		List<Transaction> latestTransactions = this.getLatestTransactions(transaction.getCreditCardNo());
+		
+		for (UserRule userRule : userRules){
+			Status status = this.userRuleService.processUserRule(transaction, userRule, latestTransactions);
+			if (!status.equals(Status.APPROVED)) {
+				break;
+			}
+ 		}
+		
+		//Failed userRules - return;
+		if (!transaction.getStatus().equals(Status.APPROVED.toString())) {
+			return;
+		}
+		
+		for (Rule rule : rules ){			
+			Status status = rule.processRule(transaction);			
 			if (!status.equals(Status.APPROVED)) break;
 		}		
 	}
@@ -222,7 +263,7 @@ public class CreditCardService {
 	}
 
 	public List<Transaction> getLatestTransactions(String ccNo) {
-		return this.getLatestTransactions(ccNo);
+		return this.dao.getLatestTransactionsForCCNo(ccNo);
 	}
 
 	public List<Transaction> getBlacklistTransactions(Date date) {
@@ -305,5 +346,5 @@ public class CreditCardService {
 		CreditCardService service = new CreditCardService();
 		logger.info(service.getTotalNoOfTransactions(10).toString());
 		service.searchUser("cc_no", "*00000102*");
-	}
+	}	
 }

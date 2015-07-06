@@ -25,8 +25,8 @@ public class TransactionAmountRule extends AbstractRule {
 			return Status.CHECK;
 		} else if (transaction.getAmount() > 4500) {
 			transaction.setStatus(Status.CLIENT_APPROVAL.toString());
-			transaction.setNotes("Amount is " + transaction.getAmount());
-
+			transaction.setNotes("Amount is " + transaction.getAmount());			
+			
 			logger.info("Transaction :" + transaction.getTransactionId() + " needs client Approval");
 			return Status.CLIENT_APPROVAL;
 		}

@@ -93,16 +93,20 @@ public class CreditCardDao {
 	
 	private CounterDao counterDao;
 	private BlackListDao blackListDao;
+	private UserRulesDao userRulesDao;
 	
 
 	public CreditCardDao(String[] contactPoints) {
 
-		Cluster cluster = Cluster.builder().addContactPoints(contactPoints).build();
+		Cluster cluster = Cluster.builder()				
+				.addContactPoints(contactPoints)
+				.build();
 
 		this.session = cluster.connect();
 		
 		counterDao = new CounterDao(session);
 		blackListDao = new BlackListDao(session);
+		userRulesDao = new UserRulesDao(session);
 
 		try {
 			this.insertTransactionStmt = session.prepare(INSERT_INTO_TRANSACTION);
@@ -416,7 +420,11 @@ public class CreditCardDao {
 	public BlackListDao getBlackListDao(){
 		return this.blackListDao;
 	}
-
+	
+	public UserRulesDao getUserRulesDao() {
+		return userRulesDao;
+	}
+	
 	public Issuer getIssuer(String issuerId) {
 		ResultSet rs = this.session.execute(this.getIssuer.bind(issuerId));
 		Row row = rs.one();
@@ -431,4 +439,5 @@ public class CreditCardDao {
 	private Issuer rowToIssuer(Row row) {
 		return new Issuer(row.getString("id"), row.getString("name"), row.getString("location"));
 	}
+
 }

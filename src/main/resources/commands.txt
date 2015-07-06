@@ -1,10 +1,75 @@
+//Load data 
+
 ~/Tools/cassandra-loader/build/cassandra-loader -f users.csv -host localhost -schema "datastax_creditcard_demo.users(user_id,first,last,gender,city,state,cc_no)"
 
 ~/Tools/cassandra-loader/build/cassandra-loader -f issuers.csv -host localhost -schema "datastax_creditcard_demo.issuers(id, name, location)"
 
-insert into blacklist_issuers (issuer, city, amount) values ('Issuer7','City-4986',450);
-insert into blacklist_issuers (issuer, city, amount) values ('Issuer7','City-4986',50);
-insert into blacklist_issuers (issuer, city, amount) Blvalues ('Issuer50000','City-1969',200);
 
+//Load some dummy blacklists
+insert into blacklist_issuers (issuer, city, amount) values ('Issuer1','City-125',200); //Tesco
+insert into blacklist_issuers (issuer, city, amount) values ('Issuer7','City-4986',50);
+insert into blacklist_issuers (issuer, city, amount) values ('Issuer50000','City-1969',200);
+insert into blacklist_issuers (issuer, city, amount) values ('Issuer4579511','City-5844',200);
+insert into blacklist_issuers (issuer, city, amount) values ('Issuer3786610','City-1394',200);
+insert into blacklist_issuers (issuer, city, amount) values ('Issuer4711498','City-2341',200);
+insert into blacklist_issuers (issuer, city, amount) values ('Issuer1121772','City-6009',200);
+insert into blacklist_issuers (issuer, city, amount) values ('Issuer805637','City-3167',200);
+insert into blacklist_issuers (issuer, city, amount) values ('Issuer2881549','City-4760',200);
+insert into blacklist_issuers (issuer, city, amount) values ('Issuer1190805','City-5985',200);
+insert into blacklist_issuers (issuer, city, amount) values ('Issuer857890','City-6974',200);
+
+insert into blacklist_cards (dummy, cc_no, amount) values ('dummy', '0000000000000001', 50);
+insert into blacklist_cards (dummy, cc_no, amount) values ('dummy', '0000000000000002', 50);
+insert into blacklist_cards (dummy, cc_no, amount) values ('dummy', '0000000000000003', 50);
+insert into blacklist_cards (dummy, cc_no, amount) values ('dummy', '0000000000000004', 50);
+insert into blacklist_cards (dummy, cc_no, amount) values ('dummy', '0000000000000005', 50);
+insert into blacklist_cards (dummy, cc_no, amount) values ('dummy', '0000000005702641', 1000);
+insert into blacklist_cards (dummy, cc_no, amount) values ('dummy', '0000000005702642', 1000);
+insert into blacklist_cards (dummy, cc_no, amount) values ('dummy', '0000000005702643', 1000);
+insert into blacklist_cards (dummy, cc_no, amount) values ('dummy', '0000000005702644', 1000);
 insert into blacklist_cards (dummy, cc_no, amount) values ('dummy', '0000000005702649', 1000);
 insert into blacklist_cards (dummy, cc_no, amount) values ('dummy', '0000000004737244', 1000);
+insert into blacklist_cards (dummy, cc_no, amount) values ('dummy', '0000000005702611', 1000);
+insert into blacklist_cards (dummy, cc_no, amount) values ('dummy', '0000000005702612', 1000);
+insert into blacklist_cards (dummy, cc_no, amount) values ('dummy', '0000000005702613', 1000);
+insert into blacklist_cards (dummy, cc_no, amount) values ('dummy', '0000000005702614', 1000);
+insert into blacklist_cards (dummy, cc_no, amount) values ('dummy', '0000000005702619', 1000);
+insert into blacklist_cards (dummy, cc_no, amount) values ('dummy', '0000000004737214', 1000);
+insert into blacklist_cards (dummy, cc_no, amount) values ('dummy', '0000000005712612', 1000);
+insert into blacklist_cards (dummy, cc_no, amount) values ('dummy', '0000000005712613', 1000);
+insert into blacklist_cards (dummy, cc_no, amount) values ('dummy', '0000000005712614', 1000);
+insert into blacklist_cards (dummy, cc_no, amount) values ('dummy', '0000000005712619', 1000);
+insert into blacklist_cards (dummy, cc_no, amount) values ('dummy', '0000000004717214', 1000);
+insert into blacklist_cards (dummy, cc_no, amount) values ('dummy', '0000000001702641', 50);
+insert into blacklist_cards (dummy, cc_no, amount) values ('dummy', '0000000001702642', 50);
+insert into blacklist_cards (dummy, cc_no, amount) values ('dummy', '0000000001702643', 50);
+insert into blacklist_cards (dummy, cc_no, amount) values ('dummy', '0000000001702644', 50);
+insert into blacklist_cards (dummy, cc_no, amount) values ('dummy', '0000000001702649', 50);
+insert into blacklist_cards (dummy, cc_no, amount) values ('dummy', '0000000001737244', 50);
+insert into blacklist_cards (dummy, cc_no, amount) values ('dummy', '0000000001702611', 50);
+insert into blacklist_cards (dummy, cc_no, amount) values ('dummy', '0000000001702612', 50);
+insert into blacklist_cards (dummy, cc_no, amount) values ('dummy', '0000000001702613', 50);
+insert into blacklist_cards (dummy, cc_no, amount) values ('dummy', '0000000001702614', 50);
+insert into blacklist_cards (dummy, cc_no, amount) values ('dummy', '0000000001702619', 50);
+insert into blacklist_cards (dummy, cc_no, amount) values ('dummy', '0000000001737214', 50);
+insert into blacklist_cards (dummy, cc_no, amount) values ('dummy', '0000000001712612', 50);
+insert into blacklist_cards (dummy, cc_no, amount) values ('dummy', '0000000001712613', 50);
+insert into blacklist_cards (dummy, cc_no, amount) values ('dummy', '0000000001712614', 50);
+insert into blacklist_cards (dummy, cc_no, amount) values ('dummy', '0000000001712619', 50);
+insert into blacklist_cards (dummy, cc_no, amount) values ('dummy', '0000000001717214', 50);
+
+
+
+
+insert into user_rules (user_id, rule_id, rule_name, issuer, amount, noOfTransactions, noOfDays) 
+values ('1', 'Rule1', 'Tesco < 100 per week', 'Issuer1', 100, -1, 7);
+
+update users set first = 'Patrick', last = 'Callaghan', email = 'pcallaghan@datastax.com' where user_id = '1';
+
+update users set first = 'Amy', last = 'McNee', email = 'a.mcnee@datastax.com' where user_id = '2';
+
+update users set first = 'Hayato', last = 'Shimizu', email = 'hshimizu@datastax.com' where user_id = '3';
+
+//Create solr core for users and issuers
+bin/dsetool create_core datastax_creditcard_demo.users generateResources=true reindex=true
+bin/dsetool create_core datastax_creditcard_demo.issuers generateResources=true reindex=true

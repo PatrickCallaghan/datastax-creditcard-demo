@@ -1,4 +1,4 @@
-create keyspace if not exists datastax_creditcard_demo WITH replication = {'class': 'NetworkTopologyStrategy', 'Analytics': 1};
+create keyspace if not exists datastax_creditcard_demo WITH replication = {'class': 'NetworkTopologyStrategy', 'SearchAnalytics': 1};
 
 use datastax_creditcard_demo; 
  
@@ -10,7 +10,8 @@ CREATE TABLE if not exists credit_card_transactions_balance (
 	balance_at timestamp static,
 	balance double static,
 	PRIMARY KEY (cc_no, transaction_time )
-) WITH CLUSTERING ORDER BY (transaction_time DESC);
+) WITH CLUSTERING ORDER BY (transaction_time DESC)
+AND compaction = {'class': 'DateTieredCompactionStrategy'};
 
 CREATE TABLE if not exists credit_card_transactions_by_issuer_date (
 	issuer text,
@@ -20,7 +21,8 @@ CREATE TABLE if not exists credit_card_transactions_by_issuer_date (
 	cc_no text,
 	amount double,
  	PRIMARY KEY ((issuer, date), transaction_time)
-) WITH CLUSTERING ORDER BY (transaction_time DESC);
+) WITH CLUSTERING ORDER BY (transaction_time DESC)
+AND compaction = {'class': 'DateTieredCompactionStrategy'};
 	
 create table if not exists latest_transactions(
 	cc_no text,
@@ -34,10 +36,8 @@ create table if not exists latest_transactions(
 	status text,
 	notes text,
 	PRIMARY KEY (cc_no, transaction_id)
-) WITH compaction= { 'class': 'MemoryOnlyStrategy' }
-	 AND default_time_to_live = 604800;
-     AND compression = {'sstable_compression' : ''}
-     AND caching = {'keys':'NONE', 'rows_per_partition':'NONE'};
+)  WITH compaction = {'class': 'DateTieredCompactionStrategy', 'max_sstable_age_days':'3'}
+	AND default_time_to_live = 604800;
 
 create table if not exists transactions(
 	cc_no text,
@@ -51,7 +51,7 @@ create table if not exists transactions(
 	status text,
 	notes text,
 	PRIMARY KEY (transaction_id)
-);
+) WITH compaction = {'class': 'DateTieredCompactionStrategy'};
 
 create table if not exists blacklist_transactions(
 	date text,
@@ -67,8 +67,26 @@ create table if not exists users(
 	gender text,
 	city text,
 	state text,
-	cc_no text
+	cc_no text,
+	email text
 ) WITH compaction= { 'class': 'MemoryOnlyStrategy' }
+     AND compression = {'sstable_compression' : ''}
+     AND caching = {'keys':'NONE', 'rows_per_partition':'NONE'};
+    
+
+//Change some user stuff        
+alter table users add email text; 
+
+create table if not exists user_rules (
+	userId text,
+	ruleId text,
+	ruleName text,
+	issuer text,
+	amount double,
+	noOfTransactions int,
+	noOfDays int,
+	PRIMARY KEY(userId, ruleId)
+)WITH compaction= { 'class': 'MemoryOnlyStrategy' }
      AND compression = {'sstable_compression' : ''}
      AND caching = {'keys':'NONE', 'rows_per_partition':'NONE'};
 
@@ -144,16 +162,14 @@ truncate credit_card_transactions_balance;
 truncate credit_card_transactions_by_issuer_date;
 truncate transaction_date_minute_counter;
 truncate trans_counter;
-
 truncate blacklist_transactions;
+truncate user_rules;
+
 truncate blacklist_cards;
 truncate blacklist_issuers;
 
 truncate users;
 truncate issuers;
-
-drop keyspace datastax_creditcard_demo;
-
 
 drop table transactions;
 drop table latest_transactions;
@@ -164,4 +180,4 @@ drop table trans_issuer_date_minute_counter;
 drop table trans_user_date_minute_counter;
 drop table trans_counter;
 
-
+drop keyspace datastax_creditcard_demo;

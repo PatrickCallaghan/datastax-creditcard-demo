@@ -11,6 +11,7 @@ public class User {
 	private String stateName;
 	private String gender;
 	private String creditCardNo;
+	private String email;
 	
 	public User(){};
 	
@@ -83,9 +84,18 @@ public class User {
 		this.creditCardNo = creditCardNo;
 	}
 
-
-	public String toString(){
-		return userId + "," + firstname + "," + lastname + "," + gender + "," + cityName + "," +stateName + ","  + this.creditCardNo;  
+	public String getEmail() {
+		return email;
 	}
-	
+
+	public void setEmail(String email) {
+		this.email = email;
+	}
+
+	@Override
+	public String toString() {
+		return "User [userId=" + userId + ", firstname=" + firstname + ", lastname=" + lastname + ", cityName="
+				+ cityName + ", stateName=" + stateName + ", gender=" + gender + ", creditCardNo=" + creditCardNo
+				+ ", email=" + email + "]";
+	}
 }
