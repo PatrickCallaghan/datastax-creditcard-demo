@@ -44,8 +44,9 @@ Generally 10 transactions per second which is nearly 1 million a day
 
 Trade processor will includes spikes every 10 days or so to simulate busy days
 
+To run TransactionCreator
 
-
+	mvn clean compile exec:java -Dexec.mainClass="com.datastax.creditcard.TransactionCreator"
 
 
 Commands
