@@ -36,7 +36,7 @@ public class TransactionCreator {
 	public TransactionCreator() {
 
 		String contactPointsStr = PropertyHelper.getProperty("contactPoints", "localhost");
-		String noOfDaysStr = PropertyHelper.getProperty("noOfDays", "0");
+		String noOfDaysStr = PropertyHelper.getProperty("noOfDays", "30");
 		String noOfTransactionsPerDayStr = PropertyHelper.getProperty("noOfTransactionsPerDay", "500000");
 		
 		int noOfDays = Integer.parseInt(noOfDaysStr);

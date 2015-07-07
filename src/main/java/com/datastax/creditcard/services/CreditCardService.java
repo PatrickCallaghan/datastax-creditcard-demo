@@ -161,6 +161,8 @@ public class CreditCardService {
 		
 		List<UserRule> userRules = this.dao.getUserRulesDao().getAllUserRules(transaction.getUserId());
 		
+		logger.info("Got " + userRules.size() + " for user " + transaction.getUserId());
+
 		if (!transaction.getStatus().equals(Status.CLIENT_APPROVED.toString())) {
 			processRules(transaction, userRules);			
 		}

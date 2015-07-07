@@ -111,6 +111,5 @@
 				</configuration>
 			</plugin>
 		</plugins>
-		<finalName>creditcard-demo</finalName>
 	</build>
 </project>

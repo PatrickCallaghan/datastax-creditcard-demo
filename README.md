@@ -61,3 +61,12 @@ insert into blacklist_issuers (issuer, city, amount) values ('Issuer50000','City
 
 insert into blacklist_cards (dummy, cc_no, amount) values ('dummy', '0000000005702649', 1000);
 insert into blacklist_cards (dummy, cc_no, amount) values ('dummy', '0000000004737244', 1000);
+
+
+    mvn clean compile exec:java -Dexec.mainClass="com.datastax.creditcard.Main"  -DnoOfTransactions=1000000 -DnoOfCreditCards=10000
+	
+To remove the tables and the schema, run the following.
+
+    mvn clean compile exec:java -Dexec.mainClass="com.datastax.demo.SchemaTeardown"
+    
+    
