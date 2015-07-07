@@ -32,6 +32,7 @@ import com.datastax.creditcard.rules.DuplicateTransactionRule;
 import com.datastax.creditcard.rules.IssuerBlackListRule;
 import com.datastax.creditcard.rules.Rule;
 import com.datastax.creditcard.rules.TransactionAmountRule;
+import com.datastax.demo.utils.PropertyHelper;
 import com.datastax.demo.utils.Timer;
 
 /**
@@ -72,7 +73,7 @@ public class CreditCardService {
 	private EmailService emailService;
 	private UserRuleService userRuleService;
 	
-	private SolrServer solr = new HttpSolrServer("http://localhost:8983/solr/datastax_creditcard_demo.users");
+	private SolrServer solr;
 	private List<Rule> rules = new ArrayList<Rule>();
 
 	private Map<String, String> ccNoUserIdMap = new HashMap<String, String>();
@@ -84,7 +85,12 @@ public class CreditCardService {
 	private Rule duplicateTransactionRule = new DuplicateTransactionRule();
 
 	public CreditCardService() {
-		this.dao = new CreditCardDao(new String[] { "localhost" });
+		
+		String contactPointsStr = PropertyHelper.getProperty("contactPoints", "localhost");		
+		this.dao = new CreditCardDao(contactPointsStr.split(","));
+		
+		solr = new HttpSolrServer("http://"+contactPointsStr+":8983/solr/datastax_creditcard_demo.users");
+		 
 		init();
 	}
 
