@@ -9,6 +9,7 @@ public class UserRule {
 	private double amount;
 	private int noOfTransactions = -1;
 	private int noOfDays = -1;
+	
 	public String getUserId() {
 		return userId;
 	}

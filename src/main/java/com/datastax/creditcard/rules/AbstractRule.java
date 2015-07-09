@@ -5,12 +5,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.datastax.creditcard.model.BlacklistIssuer;
 import com.datastax.creditcard.model.Transaction;
 import com.datastax.creditcard.model.Transaction.Status;
 
 public abstract class AbstractRule implements Rule{
 
+	private static Logger logger = LoggerFactory.getLogger(AbstractRule.class);
 	
 	Map<String, BlacklistIssuer> issuerBlackList = new HashMap<String, BlacklistIssuer>();
 	Map<String, Double> ccNoBlackMap = new HashMap<String, Double>();
@@ -32,6 +36,7 @@ public abstract class AbstractRule implements Rule{
 	}
 	
 	public Transaction getLastTransaction(){
+		
 		if (!this.transactions.isEmpty()){		
 			return transactions.get(0);
 		}else {

@@ -12,6 +12,7 @@ public class TransactionAmountRule extends AbstractRule {
 	
 	@Override
 	public Status processRule(Transaction transaction) {
+		
 		if (this.ccNoBlackMap.containsKey(transaction.getCreditCardNo())) {
 			double checkAmount = ccNoBlackMap.get(transaction.getCreditCardNo());
 
@@ -21,8 +22,9 @@ public class TransactionAmountRule extends AbstractRule {
 						+ checkAmount + ".\n" + transaction.getNotes());
 
 				logger.info("Transaction :" + transaction.getTransactionId() + " needs checking");
+				return Status.CHECK;
 			}
-			return Status.CHECK;
+			
 		} else if (transaction.getAmount() > 4500) {
 			transaction.setStatus(Status.CLIENT_APPROVAL.toString());
 			transaction.setNotes("Amount is " + transaction.getAmount());			

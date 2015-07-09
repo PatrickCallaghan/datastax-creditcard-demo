@@ -59,7 +59,7 @@ public class CreditCardDao {
 	private static final String UPDATE_TRANSACTION_STATUS = "update " + transactionTable
 			+ " set status = ?, notes = ? where transaction_id = ?";
 	private static final String UPDATE_LATEST_TRANSACTION_STATUS = "update " + latestTransactionTable
-			+ " set status = ?, notes = ? where cc_no = ? and transaction_id = ?";
+			+ " set status = ?, notes = ? where cc_no = ? and transaction_time = ?";
 	private static final String INSERT_BALANCE = "insert into " + balanceTable
 			+ "(cc_no, balance, balance_at) values (?,?,?)";
 
@@ -70,7 +70,7 @@ public class CreditCardDao {
 	private static final String GET_TRANSACTIONS_BY_ID = "select * from "
 			+ transactionTable + " where transaction_id = ?";
 	private static final String GET_TRANSACTIONS_BY_CCNO = "select * from "
-			+ latestTransactionTable + " where cc_no = ?";
+			+ latestTransactionTable + " where cc_no = ? order by transaction_time desc";
 
 	private static final String GET_ALL_CREDIT_CARDS = "select cc_no, balance_at, balance from " + balanceTable;
 	private static final String GET_USER = "Select * from " + userTable + " where user_id = ?";
@@ -160,7 +160,7 @@ public class CreditCardDao {
 		BatchStatement batch = new BatchStatement();
 		batch.add(updateTransactionStatus.bind(status, notes, transaction.getTransactionId()));
 		batch.add(updateLatestTransactionStatus.bind(status, notes, transaction.getCreditCardNo(),
-				transaction.getTransactionId()));
+				transaction.getTransactionTime()));
 		session.execute(batch);
 	}
 

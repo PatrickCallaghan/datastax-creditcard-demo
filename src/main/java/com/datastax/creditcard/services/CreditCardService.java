@@ -146,7 +146,9 @@ public class CreditCardService {
 
 		List<UserRule> userRules = this.dao.getUserRulesDao().getAllUserRules(transaction.getUserId());
 		
+		Timer timer = new Timer();
 		processRules(transaction, userRules);
+		timer.end();
 
 		return transaction;
 	}
@@ -158,6 +160,11 @@ public class CreditCardService {
 	public void confirmTransaction(String transactionId) {
 		this.updateStatusNotes(Status.CLIENT_APPROVED.toString(), "Client Approved by WS at " + new Date().toString(), transactionId);
 	}
+	
+	public void declineTransaction(String transactionId) {
+		this.updateStatusNotes(Status.DECLINED.toString(), "Client Declined by WS at " + new Date().toString(), transactionId);
+	}
+
 
 	public Transaction processTransaction(Transaction transaction) {
 		
@@ -167,10 +174,10 @@ public class CreditCardService {
 		
 		List<UserRule> userRules = this.dao.getUserRulesDao().getAllUserRules(transaction.getUserId());
 		
-		logger.info("Got " + userRules.size() + " for user " + transaction.getUserId());
-
 		if (!transaction.getStatus().equals(Status.CLIENT_APPROVED.toString())) {
-			processRules(transaction, userRules);			
+			Timer timer = new Timer();
+			processRules(transaction, userRules);
+			timer.end();
 		}
 
 		if (transaction.getStatus().equals(Status.CLIENT_APPROVAL.toString())) {
@@ -195,9 +202,9 @@ public class CreditCardService {
 	private void processRules(Transaction transaction, List<UserRule> userRules) {
 		
 		//Always going to get the last 7 days for the demo
-		List<Transaction> latestTransactions = this.getLatestTransactions(transaction.getCreditCardNo());
+		List<Transaction> latestTransactions = this.getLatestTransactions(transaction.getCreditCardNo());		
 		
-		for (UserRule userRule : userRules){
+		for (UserRule userRule : userRules){			
 			Status status = this.userRuleService.processUserRule(transaction, userRule, latestTransactions);
 			if (!status.equals(Status.APPROVED)) {
 				break;
@@ -209,12 +216,29 @@ public class CreditCardService {
 			return;
 		}
 		
-		for (Rule rule : rules ){			
+		for (Rule rule : rules ){
+			rule.setLatestTransactions(latestTransactions);
+			
 			Status status = rule.processRule(transaction);			
-			if (!status.equals(Status.APPROVED)) break;
+			
+			if (!status.equals(Status.APPROVED)) {
+				break;
+			}
 		}		
 	}
+	
+	public void insertUserRule(UserRule userRule){
+		this.dao.getUserRulesDao().insertUserRule(userRule);
+	}
+	
+	public List<UserRule> getUserRules(String userId){
+		return this.dao.getUserRulesDao().getAllUserRules(userId);
+	}
 
+	public UserRule getUserRule(String userId, String ruleId){
+		return this.dao.getUserRulesDao().getUserRule(userId, ruleId);
+	}
+	
 	public void insertBlacklistIssuer(Date date, String issuer, String city, double amount) {
 
 		this.dao.getBlackListDao().insertBlacklistIssuer(date, issuer, city, amount);

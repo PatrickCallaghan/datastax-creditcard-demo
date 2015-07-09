@@ -24,20 +24,7 @@ CREATE TABLE if not exists credit_card_transactions_by_issuer_date (
 ) WITH CLUSTERING ORDER BY (transaction_time DESC)
 AND compaction = {'class': 'DateTieredCompactionStrategy'};
 	
-create table if not exists latest_transactions(
-	cc_no text,
-	transaction_time timestamp,
-	transaction_id text,
-	location text,
-	items map<text, double>,
-	issuer text,
-	amount double,
-	user_id text,
-	status text,
-	notes text,
-	PRIMARY KEY (cc_no, transaction_id)
-)  WITH compaction = {'class': 'DateTieredCompactionStrategy', 'max_sstable_age_days':'3'}
-	AND default_time_to_live = 604800;
+		
 
 create table if not exists transactions(
 	cc_no text,

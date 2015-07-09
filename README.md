@@ -44,9 +44,13 @@ Generally 10 transactions per second which is nearly 1 million a day
 
 Trade processor will includes spikes every 10 days or so to simulate busy days
 
-To run TransactionCreator
+To run TransactionCreator for today
 
-	mvn clean compile exec:java -Dexec.mainClass="com.datastax.creditcard.TransactionCreator"
+	mvn clean compile exec:java -Dexec.mainClass="com.datastax.creditcard.TransactionCreator" -DnoOfDays=0
+	
+To populate data for a number of days and then continue in real time 
+
+	mvn clean compile exec:java -Dexec.mainClass="com.datastax.creditcard.TransactionCreator" -DnoOfDays=10	
 
 
 Commands
@@ -62,8 +66,6 @@ insert into blacklist_issuers (issuer, city, amount) values ('Issuer50000','City
 insert into blacklist_cards (dummy, cc_no, amount) values ('dummy', '0000000005702649', 1000);
 insert into blacklist_cards (dummy, cc_no, amount) values ('dummy', '0000000004737244', 1000);
 
-
-    mvn clean compile exec:java -Dexec.mainClass="com.datastax.creditcard.Main"  -DnoOfTransactions=1000000 -DnoOfCreditCards=10000
 	
 To remove the tables and the schema, run the following.
 

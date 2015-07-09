@@ -15,6 +15,10 @@ public class UserRuleService {
 	
 	public Transaction.Status processUserRule(Transaction transaction, UserRule userRule, List<Transaction> latestTransactions){
 			
+		if (!userRule.getIssuer().equals(transaction.getIssuer())){
+			return Status.APPROVED;
+		}
+		
 		if (userRule.getAmount() > 0){
 
 			String issuer = userRule.getIssuer();

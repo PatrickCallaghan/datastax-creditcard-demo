@@ -17,6 +17,8 @@ public class IssuerBlackListRule extends AbstractRule {
 	public Status processRule(Transaction transaction) {
 		if (this.issuerBlackList.containsKey(transaction.getIssuer())) {
 
+			logger.info("Processing Issuer Blacklist rule");
+			
 			BlacklistIssuer blacklistIssuer = this.issuerBlackList.get(transaction.getIssuer());
 
 			Map<String, Double> cityAmount = blacklistIssuer.getCityAmount();

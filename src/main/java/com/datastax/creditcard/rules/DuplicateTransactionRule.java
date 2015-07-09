@@ -28,13 +28,15 @@ public class DuplicateTransactionRule extends AbstractRule {
 	}
 
 	private boolean almostEquals(Transaction transaction, Transaction lastTransaction) {
-		if (lastTransaction == null) return false;
+		if (lastTransaction == null) {
+			return false;
+		}
 
-		if ((transaction.getAmount() == lastTransaction.getAmount())
+		if ((transaction.getAmount().doubleValue() == lastTransaction.getAmount().doubleValue())
 				&& transaction.getIssuer().equals(lastTransaction.getIssuer())
 				&& transaction.getLocation().equals(lastTransaction.getLocation())
 				&& transaction.getCreditCardNo().equals(lastTransaction.getCreditCardNo())
-				&& (transaction.getTransactionTime().getTime() - ONE_MINUTE) > lastTransaction.getTransactionTime().getTime()){
+				&& (transaction.getTransactionTime().getTime() - ONE_MINUTE) < lastTransaction.getTransactionTime().getTime()){
 			return true;
 		}
 		return false;
