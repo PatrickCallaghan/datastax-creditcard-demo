@@ -2,21 +2,21 @@
 
 ~/Tools/cassandra-loader/build/cassandra-loader -f users.csv -host localhost -schema "datastax_creditcard_demo.users(user_id,first,last,gender,city,state,cc_no)"
 
-~/Tools/cassandra-loader/build/cassandra-loader -f issuers.csv -host localhost -schema "datastax_creditcard_demo.issuers(id, name, location)"
+~/Tools/cassandra-loader/build/cassandra-loader -f issuers.csv -host localhost -schema "datastax_creditcard_demo.merchants(id, name, location)"
 
 
 //Load some dummy blacklists
-insert into blacklist_issuers (issuer, city, amount) values ('Issuer1','City-125',200); //Tesco
-insert into blacklist_issuers (issuer, city, amount) values ('Issuer7','City-4986',50);
-insert into blacklist_issuers (issuer, city, amount) values ('Issuer50000','City-1969',200);
-insert into blacklist_issuers (issuer, city, amount) values ('Issuer4579511','City-5844',200);
-insert into blacklist_issuers (issuer, city, amount) values ('Issuer3786610','City-1394',200);
-insert into blacklist_issuers (issuer, city, amount) values ('Issuer4711498','City-2341',200);
-insert into blacklist_issuers (issuer, city, amount) values ('Issuer1121772','City-6009',200);
-insert into blacklist_issuers (issuer, city, amount) values ('Issuer805637','City-3167',200);
-insert into blacklist_issuers (issuer, city, amount) values ('Issuer2881549','City-4760',200);
-insert into blacklist_issuers (issuer, city, amount) values ('Issuer1190805','City-5985',200);
-insert into blacklist_issuers (issuer, city, amount) values ('Issuer857890','City-6974',200);
+insert into blacklist_issuers (merchant, city, amount) values ('Issuer1','City-125',200); //Tesco
+insert into blacklist_issuers (merchant, city, amount) values ('Issuer7','City-4986',50);
+insert into blacklist_issuers (merchant, city, amount) values ('Issuer50000','City-1969',200);
+insert into blacklist_issuers (merchant, city, amount) values ('Issuer4579511','City-5844',200);
+insert into blacklist_issuers (merchant, city, amount) values ('Issuer3786610','City-1394',200);
+insert into blacklist_issuers (merchant, city, amount) values ('Issuer4711498','City-2341',200);
+insert into blacklist_issuers (merchant, city, amount) values ('Issuer1121772','City-6009',200);
+insert into blacklist_issuers (merchant, city, amount) values ('Issuer805637','City-3167',200);
+insert into blacklist_issuers (merchant, city, amount) values ('Issuer2881549','City-4760',200);
+insert into blacklist_issuers (merchant, city, amount) values ('Issuer1190805','City-5985',200);
+insert into blacklist_issuers (merchant, city, amount) values ('Issuer857890','City-6974',200);
 
 insert into blacklist_cards (dummy, cc_no, amount) values ('dummy', '0000000000000001', 50);
 insert into blacklist_cards (dummy, cc_no, amount) values ('dummy', '0000000000000002', 50);
@@ -61,10 +61,10 @@ insert into blacklist_cards (dummy, cc_no, amount) values ('dummy', '00000000017
 
 
 
-insert into user_rules (user_id, rule_id, rule_name, issuer, amount, noOfTransactions, noOfDays) 
+insert into user_rules (user_id, rule_id, rule_name, merchant, amount, noOfTransactions, noOfDays) 
 values ('1', 'Rule1', 'Tesco < 100 per week', 'Issuer1', 100, -1, 7);
 
-insert into user_rules (user_id, rule_id, rule_name, issuer, amount, noOfTransactions, noOfDays) 
+insert into user_rules (user_id, rule_id, rule_name, merchant, amount, noOfTransactions, noOfDays) 
 values ('2', 'Rule1', 'Tesco < 100 per week', 'Issuer2', 100, -1, 7);
 
 
@@ -76,4 +76,4 @@ update users set first = 'Hayato', last = 'Shimizu', email = 'hshimizu@datastax.
 
 //Create solr core for users and issuers
 bin/dsetool create_core datastax_creditcard_demo.users generateResources=true reindex=true
-bin/dsetool create_core datastax_creditcard_demo.issuers generateResources=true reindex=true
+bin/dsetool create_core datastax_creditcard_demo.merchants generateResources=true reindex=true

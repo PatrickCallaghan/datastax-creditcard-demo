@@ -33,7 +33,7 @@ public class DuplicateTransactionRule extends AbstractRule {
 		}
 
 		if ((transaction.getAmount().doubleValue() == lastTransaction.getAmount().doubleValue())
-				&& transaction.getIssuer().equals(lastTransaction.getIssuer())
+				&& transaction.getMerchant().equals(lastTransaction.getMerchant())
 				&& transaction.getLocation().equals(lastTransaction.getLocation())
 				&& transaction.getCreditCardNo().equals(lastTransaction.getCreditCardNo())
 				&& (transaction.getTransactionTime().getTime() - ONE_MINUTE) < lastTransaction.getTransactionTime().getTime()){

@@ -11,7 +11,7 @@ public class Transaction {
 	private String transactionId;
 	private Map<String, Double> items;
 	private String location;
-	private String issuer;
+	private String merchant;
 	private Double amount;
 	private String status;	
 	private String notes;
@@ -60,12 +60,12 @@ public class Transaction {
 		this.location = location;
 	}
 
-	public String getIssuer() {
-		return issuer;
+	public String getMerchant() {
+		return merchant;
 	}
 
-	public void setIssuer(String issuer) {
-		this.issuer = issuer;
+	public void setMerchant(String merchant) {
+		this.merchant = merchant;
 	}
 
 	public Double getAmount() {
@@ -103,7 +103,7 @@ public class Transaction {
 	public String toString() {
 		return "Transaction [creditCardNo=" + creditCardNo + ", userId=" + userId + ", transactionTime="
 				+ transactionTime + ", transactionId=" + transactionId + ", items=" + items + ", location=" + location
-				+ ", issuer=" + issuer + ", amount=" + amount + ", status=" + status + ", notes=" + notes + "]";
+				+ ", issuer=" + merchant + ", amount=" + amount + ", status=" + status + ", notes=" + notes + "]";
 	}
 
 	public String getUserId() {

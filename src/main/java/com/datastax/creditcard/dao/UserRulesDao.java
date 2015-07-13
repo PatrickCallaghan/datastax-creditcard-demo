@@ -38,10 +38,12 @@ public class UserRulesDao {
 			+ " where user_id = ? and rule_id = ?";
 
 	private static final String INSERT_USER_RULE = "insert into " +userRules+ " (user_id, rule_id, rule_name, issuer, amount, nooftransactions, noofdays) values (?,?,?,?,?,?,?)";
-
+	private static final String DELETE_USER_RULE = "delete from " +userRules+ " where user_id = ? and rule_id = ?";
+			
 	private PreparedStatement getAllUserRules;
 	private PreparedStatement getUserRule;
 	private PreparedStatement insertUserRule;
+	private PreparedStatement deleteUserRule;
 
 	public UserRulesDao(Session session) {
 		this.session = session;
@@ -49,6 +51,7 @@ public class UserRulesDao {
 		this.getAllUserRules = session.prepare(GET_ALL_USER_RULES);
 		this.getUserRule = session.prepare(GET_USER_RULE);
 		this.insertUserRule = session.prepare(INSERT_USER_RULE);
+		this.deleteUserRule = session.prepare(DELETE_USER_RULE);
 	}
 	
 	public void insertUserRule(UserRule userRule){
@@ -56,7 +59,7 @@ public class UserRulesDao {
 		BoundStatement bound = new BoundStatement(this.insertUserRule);
 		
 		session.execute(bound.bind(userRule.getUserId(), userRule.getRuleId(), userRule.getRuleName(), 
-							userRule.getIssuer(), userRule.getAmount(), userRule.getNoOfTransactions(), userRule.getNoOfDays()));
+							userRule.getMerchant(), userRule.getAmount(), userRule.getNoOfTransactions(), userRule.getNoOfDays()));
 		
 		return;
 	}
@@ -71,8 +74,7 @@ public class UserRulesDao {
 		while (iter.hasNext()) {
 
 			Row row = iter.next();
-			UserRule userRule = rowToUserRule(row);
-		
+			UserRule userRule = rowToUserRule(row);		
 			userRules.add(userRule);
 		}
 
@@ -88,12 +90,18 @@ public class UserRulesDao {
 		}
 	}
 	
+
+	public void deleteUserRule(String userId, String ruleId) {
+		BoundStatement bound = new BoundStatement(this.deleteUserRule);
+		session.execute(bound.bind(userId, ruleId));		
+	}
+	
 	private UserRule rowToUserRule(Row row) {
 		UserRule userRule = new UserRule();
 		userRule.setUserId(row.getString("user_id"));
 		userRule.setRuleId(row.getString("rule_id"));
 		userRule.setRuleName(row.getString("rule_name"));
-		userRule.setIssuer(row.getString("issuer"));
+		userRule.setMerchant(row.getString("merchant"));
 		userRule.setAmount(row.getDouble("amount"));
 		userRule.setNoOfDays(row.getInt("noOfDays"));
 		userRule.setNoOfTransactions(row.getInt("noOfTransactions"));
@@ -105,6 +113,5 @@ public class UserRulesDao {
 	private String formatDate(Date date){
 		return this.dateFormatter.format(date);
 	}
-
 
 }

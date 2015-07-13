@@ -1,12 +1,12 @@
 package com.datastax.creditcard.model;
 
-public class Issuer {
+public class Merchant {
 
 	private String id;
 	private String name;
 	private String location;
 	
-	public Issuer(String id, String name, String location) {
+	public Merchant(String id, String name, String location) {
 		super();
 		this.id = id;
 		this.name = name;

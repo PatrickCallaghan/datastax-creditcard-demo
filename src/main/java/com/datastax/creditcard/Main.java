@@ -89,7 +89,7 @@ public class Main {
 		Transaction transaction = new Transaction();
 		createItemsAndAmount(noOfItems, transaction);
 		transaction.setCreditCardNo(new Integer(creditCardNo).toString());
-		transaction.setIssuer(issuer);
+		transaction.setMerchant(issuer);
 		transaction.setTransactionId(UUID.randomUUID().toString());
 		transaction.setTransactionTime(date.toDate());
 		transaction.setLocation(location);

@@ -22,14 +22,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.datastax.creditcard.dao.CreditCardDao;
-import com.datastax.creditcard.model.BlacklistIssuer;
-import com.datastax.creditcard.model.Issuer;
+import com.datastax.creditcard.model.BlacklistMerchant;
+import com.datastax.creditcard.model.Merchant;
 import com.datastax.creditcard.model.Transaction;
 import com.datastax.creditcard.model.Transaction.Status;
 import com.datastax.creditcard.model.User;
 import com.datastax.creditcard.model.UserRule;
 import com.datastax.creditcard.rules.DuplicateTransactionRule;
-import com.datastax.creditcard.rules.IssuerBlackListRule;
+import com.datastax.creditcard.rules.MerchantBlackListRule;
 import com.datastax.creditcard.rules.Rule;
 import com.datastax.creditcard.rules.TransactionAmountRule;
 import com.datastax.demo.utils.PropertyHelper;
@@ -78,9 +78,9 @@ public class CreditCardService {
 
 	private Map<String, String> ccNoUserIdMap = new HashMap<String, String>();
 	private Map<String, Double> ccNoBlackMap = new HashMap<String, Double>();
-	private Map<String, BlacklistIssuer> issuerBlackList = new HashMap<String, BlacklistIssuer>();
+	private Map<String, BlacklistMerchant> merchantBlackList = new HashMap<String, BlacklistMerchant>();
 
-	private Rule issuerBlackListRule = new IssuerBlackListRule();
+	private Rule merchantBlackListRule = new MerchantBlackListRule();
 	private Rule transactionAmountRule = new TransactionAmountRule();
 	private Rule duplicateTransactionRule = new DuplicateTransactionRule();
 
@@ -101,7 +101,7 @@ public class CreditCardService {
 
 	private void init() {
 		this.rules = new ArrayList<Rule>();
-		this.rules.add(issuerBlackListRule);
+		this.rules.add(merchantBlackListRule);
 		this.rules.add(transactionAmountRule);
 		this.rules.add(duplicateTransactionRule);
 		
@@ -130,12 +130,12 @@ public class CreditCardService {
 			public void run() {
 				Timer timer = new Timer();
 				ccNoBlackMap = dao.getBlackListDao().getBlacklistCards();
-				issuerBlackList = dao.getBlackListDao().getBlacklistIssuers();
+				merchantBlackList = dao.getBlackListDao().getBlacklistIssuers();
 				timer.end();
 
 				for (Rule rule : rules) {
 					rule.setCCNoBlackList(ccNoBlackMap);
-					rule.setIssuerBlackList(issuerBlackList);
+					rule.setIssuerBlackList(merchantBlackList);
 				}
 			}
 
@@ -231,6 +231,10 @@ public class CreditCardService {
 		this.dao.getUserRulesDao().insertUserRule(userRule);
 	}
 	
+	public void deleteUserRule(String userId, String ruleId){
+		this.dao.getUserRulesDao().deleteUserRule(userId, ruleId);
+	}
+	
 	public List<UserRule> getUserRules(String userId){
 		return this.dao.getUserRulesDao().getAllUserRules(userId);
 	}
@@ -239,9 +243,9 @@ public class CreditCardService {
 		return this.dao.getUserRulesDao().getUserRule(userId, ruleId);
 	}
 	
-	public void insertBlacklistIssuer(Date date, String issuer, String city, double amount) {
+	public void insertBlacklistMerchant(Date date, String merchant, String city, double amount) {
 
-		this.dao.getBlackListDao().insertBlacklistIssuer(date, issuer, city, amount);
+		this.dao.getBlackListDao().insertBlacklistMerchant(date, merchant, city, amount);
 	}
 
 	public void insertBlacklistCard(Date date, String cc_no, double amount) {
@@ -258,8 +262,8 @@ public class CreditCardService {
 		return dao.getUser(userId);
 	}
 
-	public Issuer getIssuerById(String issuerId) {
-		return dao.getIssuer(issuerId);
+	public Merchant getMerchantById(String merchantId) {
+		return dao.getMerchant(merchantId);
 	}
 
 	public Transaction getTransaction(String transactionId) {
@@ -279,13 +283,13 @@ public class CreditCardService {
 	}
 
 	@SuppressWarnings("deprecation")
-	public List<Transaction> getIssuerTransactions(String issuer, long date) {
+	public List<Transaction> getMerchantTransactions(String issuer, long date) {
 
 		if (date <= 0) {
 			date = DateMidnight.now().getMillis();
 		}
 
-		return dao.getIssuerTransactions(issuer, date);
+		return dao.getMerchantTransactions(issuer, date);
 	}
 
 	public List<Transaction> getBlacklistTransactions() {
@@ -322,7 +326,7 @@ public class CreditCardService {
 	}
 
 	public Map<String, Integer> getNoOfTransactionsIssuerDay(String issuer, int nDays) {
-		return dao.getCounterDao().getIssuerCounterLastNDays(issuer, DateTime.now(), nDays);
+		return dao.getCounterDao().getMerchantCounterLastNDays(issuer, DateTime.now(), nDays);
 	}
 
 	public List<User> searchUser(String field, String filterValue) {
@@ -368,7 +372,7 @@ public class CreditCardService {
 		return users;
 	}
 
-	public List<Issuer> searchIssuer() {
+	public List<Merchant> searchIssuer() {
 		return null;
 	}
 

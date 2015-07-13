@@ -2,11 +2,11 @@ package com.datastax.creditcard.model;
 
 import java.util.Map;
 
-public class BlacklistIssuer {
+public class BlacklistMerchant {
 	
 	private Map<String, Double> cityAmount;
 	
-	public BlacklistIssuer(){		
+	public BlacklistMerchant(){		
 	}
 
 	public Map<String, Double> getCityAmount() {

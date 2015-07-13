@@ -130,7 +130,7 @@ public class TransactionCreator {
 		Transaction transaction = new Transaction();
 		createItemsAndAmount(noOfItems, transaction);
 		transaction.setCreditCardNo(creditCardFormatter.format(creditCardNo));
-		transaction.setIssuer(issuerId);
+		transaction.setMerchant(issuerId);
 		transaction.setTransactionId(UUID.randomUUID().toString());
 		transaction.setTransactionTime(date);
 		transaction.setLocation(location);

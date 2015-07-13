@@ -36,43 +36,43 @@ public class CounterDao {
 	private DateFormat dateFormatter = new SimpleDateFormat("yyyyMMdd");
 	private DateFormat dateTimeFormatter = new SimpleDateFormat("yyyyMMdd-hh:mm:ss");
 
-	private PreparedStatement updateIssuerDateMinTableStmt;
+	private PreparedStatement updateMerchantDateMinTableStmt;
 	private PreparedStatement updateUserDateMinTableStmt;
 	private PreparedStatement updateTableStmt;
 
 	private PreparedStatement getCountTableStmt;
-	private PreparedStatement getIssuerCountTableStmt;
+	private PreparedStatement getMerchantCountTableStmt;
 	private PreparedStatement getUserCountTableStmt;
-	private PreparedStatement getIssuerHourCountTableStmt;
+	private PreparedStatement getMerchantHourCountTableStmt;
 	private PreparedStatement getUserHourCountTableStmt;
 	
 	private static String keyspaceName = "datastax_creditcard_demo";
-	private static String counterIssuerDateMinTable = keyspaceName + ".trans_issuer_date_minute_counter";
+	private static String counterMerchantDateMinTable = keyspaceName + ".trans_merchant_date_minute_counter";
 	private static String counterUserDateMinTable = keyspaceName + ".trans_user_date_minute_counter";
 	private static String counterTable = keyspaceName + ".trans_counter";
 	
-	private static String updateIssuerDateMinTable = "update " + counterIssuerDateMinTable + " set total = total + 1 where "
-			+ "issuer = ? and date = ? and hour = ? and minute = ?";
+	private static String updateMerchantDateMinTable = "update " + counterMerchantDateMinTable + " set total = total + 1 where "
+			+ "merchant = ? and date = ? and hour = ? and minute = ?";
 	private static String updateUserDateMinTable = "update " + counterUserDateMinTable + " set total = total + 1 where "
 			+ "user = ? and date = ? and hour = ? and minute = ?";
 	private static String updateTable = "update " + counterTable + " set total = total + 1 where date = ?";		
 	
 	private static String getCountTable = "select date, total from  " + counterTable + " where date = ?";	
-	private static String getIssuerCountTable = "select date, total from  " + counterIssuerDateMinTable + " where issuer = ? and date = ?";	
-	private static String getIssuerHourCountTable = "select date, hour, minute, total from  " + counterIssuerDateMinTable + " where issuer = ? and date = ? and hour = ?";	
+	private static String getMerchantCountTable = "select date, total from  " + counterMerchantDateMinTable + " where merchant = ? and date = ?";	
+	private static String getMerchantHourCountTable = "select date, hour, minute, total from  " + counterMerchantDateMinTable + " where merchant = ? and date = ? and hour = ?";	
 	private static String getUserCountTable = "select date, total from  " + counterUserDateMinTable + " where user = ? and date = ?";
 	private static String getUserHourCountTable = "select date, hour, minute, total from  " + counterUserDateMinTable + " where user = ? and date = ? and hour = ?";
 	
 	public CounterDao(Session session) {
 		this.session = session;
 		
-		this.updateIssuerDateMinTableStmt = this.session.prepare(updateIssuerDateMinTable);
+		this.updateMerchantDateMinTableStmt = this.session.prepare(updateMerchantDateMinTable);
 		this.updateUserDateMinTableStmt = this.session.prepare(updateUserDateMinTable);
 		this.updateTableStmt = this.session.prepare(updateTable);
 		
 		this.getCountTableStmt = this.session.prepare(getCountTable);
-		this.getIssuerCountTableStmt = this.session.prepare(getIssuerCountTable);
-		this.getIssuerHourCountTableStmt = this.session.prepare(getIssuerHourCountTable);
+		this.getMerchantCountTableStmt = this.session.prepare(getMerchantCountTable);
+		this.getMerchantHourCountTableStmt = this.session.prepare(getMerchantHourCountTable);
 		this.getUserCountTableStmt = this.session.prepare(getUserCountTable);
 		this.getUserHourCountTableStmt = this.session.prepare(getUserHourCountTable);		
 	}
@@ -84,7 +84,7 @@ public class CounterDao {
 		
 		BatchStatement batch = new BatchStatement(Type.COUNTER);
 		batch.add(this.updateTableStmt.bind(dateStr));		
-		batch.add(this.updateIssuerDateMinTableStmt.bind(transaction.getIssuer(), dateStr, date.getHourOfDay(), date.getMinuteOfHour()));		
+		batch.add(this.updateMerchantDateMinTableStmt.bind(transaction.getMerchant(), dateStr, date.getHourOfDay(), date.getMinuteOfHour()));		
 		batch.add(this.updateUserDateMinTableStmt.bind(userId, dateStr, date.getHourOfDay(), date.getMinuteOfHour()));
 		this.session.execute(batch);
 	}
@@ -95,7 +95,7 @@ public class CounterDao {
 		int hour = dateTime.getHourOfDay();
 		int min = dateTime.getMinuteOfHour();
 		
-		BoundStatement bound = new BoundStatement(this.updateIssuerDateMinTableStmt);
+		BoundStatement bound = new BoundStatement(this.updateMerchantDateMinTableStmt);
 		this.session.execute(bound.bind(issuer, date, hour, min));
 	}
 	
@@ -127,9 +127,7 @@ public class CounterDao {
 			
 			DateTime newDate = dateTime.minusDays(i);
 						
-			String date = dateFormatter.format(newDate.toDate());
-			logger.info("binding :" + date);
-			
+			String date = dateFormatter.format(newDate.toDate());			
 			futures.add(this.session.executeAsync(bound.bind(date)));			
 		}
 				
@@ -146,10 +144,10 @@ public class CounterDao {
 		return dateCountMap;		
 	}
 	
-	public Map<String, Integer> getIssuerCounterLastNDays(String issuer, DateTime dateTime, int nDays){
+	public Map<String, Integer> getMerchantCounterLastNDays(String merchant, DateTime dateTime, int nDays){
 		
-		BoundStatement bound = new BoundStatement(this.getIssuerCountTableStmt);
-		return this.getCounterLastNDays(bound, issuer, dateTime, nDays);		
+		BoundStatement bound = new BoundStatement(this.getMerchantCountTableStmt);
+		return this.getCounterLastNDays(bound, merchant, dateTime, nDays);		
 	}	
 	public Map<String, Integer> getUserCounterLastNDays(String user, DateTime dateTime, int nDays){
 		BoundStatement bound = new BoundStatement(this.getUserCountTableStmt);
@@ -179,10 +177,10 @@ public class CounterDao {
 		return dateCountMap;		
 	}
 	
-	public Map<String, Integer> getIssuerHourCounterLastNDays(String issuer, DateTime dateTime, int hour, int nDays){
+	public Map<String, Integer> getMerchantHourCounterLastNDays(String merchant, DateTime dateTime, int hour, int nDays){
 		
-		BoundStatement bound = new BoundStatement(this.getIssuerHourCountTableStmt);
-		return this.getHourCounterLastNDays(bound, issuer, dateTime, hour, nDays);		
+		BoundStatement bound = new BoundStatement(this.getMerchantHourCountTableStmt);
+		return this.getHourCounterLastNDays(bound, merchant, dateTime, hour, nDays);		
 	}	
 	public Map<String, Integer> getUserHourCounterLastNDays(String user, DateTime dateTime, int hour, int nDays){
 		BoundStatement bound = new BoundStatement(this.getUserHourCountTableStmt);

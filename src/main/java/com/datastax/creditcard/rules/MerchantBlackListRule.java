@@ -5,21 +5,21 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.datastax.creditcard.model.BlacklistIssuer;
+import com.datastax.creditcard.model.BlacklistMerchant;
 import com.datastax.creditcard.model.Transaction;
 import com.datastax.creditcard.model.Transaction.Status;
 
-public class IssuerBlackListRule extends AbstractRule {
+public class MerchantBlackListRule extends AbstractRule {
 
-	private static Logger logger = LoggerFactory.getLogger(IssuerBlackListRule.class);
+	private static Logger logger = LoggerFactory.getLogger(MerchantBlackListRule.class);
 	
 	@Override
 	public Status processRule(Transaction transaction) {
-		if (this.issuerBlackList.containsKey(transaction.getIssuer())) {
+		if (this.issuerBlackList.containsKey(transaction.getMerchant())) {
 
-			logger.info("Processing Issuer Blacklist rule");
+			logger.info("Processing Merchant Blacklist rule");
 			
-			BlacklistIssuer blacklistIssuer = this.issuerBlackList.get(transaction.getIssuer());
+			BlacklistMerchant blacklistIssuer = this.issuerBlackList.get(transaction.getMerchant());
 
 			Map<String, Double> cityAmount = blacklistIssuer.getCityAmount();
 

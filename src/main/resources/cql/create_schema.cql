@@ -13,14 +13,14 @@ CREATE TABLE if not exists credit_card_transactions_balance (
 ) WITH CLUSTERING ORDER BY (transaction_time DESC)
 AND compaction = {'class': 'DateTieredCompactionStrategy'};
 
-CREATE TABLE if not exists credit_card_transactions_by_issuer_date (
-	issuer text,
+CREATE TABLE if not exists credit_card_transactions_by_merchant_date (
+	merchant text,
 	transaction_time timestamp,
 	date text, 
 	transaction_id text,
 	cc_no text,
 	amount double,
- 	PRIMARY KEY ((issuer, date), transaction_time)
+ 	PRIMARY KEY ((merchant, date), transaction_time)
 ) WITH CLUSTERING ORDER BY (transaction_time DESC)
 AND compaction = {'class': 'DateTieredCompactionStrategy'};
 	
@@ -68,7 +68,7 @@ create table if not exists user_rules (
 	user_id text,
 	rule_id text,
 	rule_name text,
-	issuer text,
+	merchant text,
 	amount double,
 	noOfTransactions int,
 	noOfDays int,
@@ -77,7 +77,7 @@ create table if not exists user_rules (
      AND compression = {'sstable_compression' : ''}
      AND caching = {'keys':'NONE', 'rows_per_partition':'NONE'};
 
-create table if not exists issuers(
+create table if not exists merchants(
     id text,
     name text,
     location text,
@@ -86,7 +86,7 @@ create table if not exists issuers(
      AND compression = {'sstable_compression' : ''}
      AND caching = {'keys':'NONE', 'rows_per_partition':'NONE'};
     
-create table if not exists blacklist_issuers(
+create table if not exists blacklist_merchants(
 	issuer text,
 	city text,
 	amount double,
@@ -114,13 +114,13 @@ create table if not exists transaction_date_minute_counter (
 );
 
 //Issuers
-create table if not exists trans_issuer_date_minute_counter (
-	issuer text,
+create table if not exists trans_merchant_date_minute_counter (
+	merchant text,
 	date text,
 	hour int,
 	minute int,
 	total counter,
-	PRIMARY KEY  ((issuer, date), hour, minute)
+	PRIMARY KEY  ((merchant, date), hour, minute)
 );
 
 create table if not exists trans_user_date_minute_counter (
@@ -150,10 +150,10 @@ truncate blacklist_transactions;
 truncate user_rules;
 
 truncate blacklist_cards;
-truncate blacklist_issuers;
+truncate blacklist_merchants;
 
 truncate users;
-truncate issuers;
+truncate merchants;
 
 drop table transactions;
 drop table latest_transactions;

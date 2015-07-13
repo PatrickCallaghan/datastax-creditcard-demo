@@ -5,7 +5,7 @@ public class UserRule {
 	private String userId;
 	private String ruleId;
 	private String ruleName;
-	private String issuer;
+	private String merchant;
 	private double amount;
 	private int noOfTransactions = -1;
 	private int noOfDays = -1;
@@ -28,11 +28,11 @@ public class UserRule {
 	public void setRuleName(String ruleName) {
 		this.ruleName = ruleName;
 	}
-	public String getIssuer() {
-		return issuer;
+	public String getMerchant() {
+		return merchant;
 	}
-	public void setIssuer(String issuer) {
-		this.issuer = issuer;
+	public void setMerchant(String merchant) {
+		this.merchant = merchant;
 	}
 	public double getAmount() {
 		return amount;
@@ -54,7 +54,7 @@ public class UserRule {
 	}
 	@Override
 	public String toString() {
-		return "UserRule [userId=" + userId + ", ruleId=" + ruleId + ", ruleName=" + ruleName + ", issuer=" + issuer
+		return "UserRule [userId=" + userId + ", ruleId=" + ruleId + ", ruleName=" + ruleName + ", merchant=" + merchant
 				+ ", amount=" + amount + ", noOfTransactions=" + noOfTransactions + ", noOfDays=" + noOfDays + "]";
 	} 
 }
