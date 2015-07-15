@@ -34,7 +34,7 @@ public class SendEmail {
 		
 		try {
 			this.transport = mailSession.getTransport("smtp");
-			this.transport.connect("smtp.gmail.com", "patcho@gmail.com", "1LmyL1fe2005");
+			this.transport.connect("smtp.gmail.com", "creditcard.test2015@gmail.com", "M0nkey2015");
 		} catch (NoSuchProviderException e) {
 			throw e;
 		} catch (MessagingException e) {
