@@ -1,13 +1,13 @@
 Credit Card Demo
 ====================
 
-Fraud Detection Dashboard
+###Fraud Detection Dashboard
 
 The Fraud Detection systems encapsulates a credit card transaction system and dashboard for monitoring fraudulent transactions and suspicious issuers and users. This system will also allow a monitor to approve or reject a transaction in realtime.
 
 
+###Functional requirements
 
-Functional requirements
 1. Show dashboard with all relevant details of a credit card system.
 2. Monitor transactions as they arrive.
 3. Monitor transactions by issuer 
@@ -23,13 +23,13 @@ Dashboard View will contain the following
 6. No of transactions by day
 7. View of all transactions under review.
 
-User View 
+###User View 
 1. Allow searching for a particular user. 
 2. Table will contain all transactions for a user, 	highlighting any under review
 3. Ability to approve or reject a transaction
 4. View/Add/Delete Users to a blacklist
 
-Issuer View
+###Issuer View
 1. Allow searching for a particular issuer.
 2. Table will contain all transactions for am issuer, highlighting any under review
 3. Ability to approve or reject a transaction
@@ -55,17 +55,18 @@ To populate data for a number of days and then continue in real time
 
 Commands
 
-~/Tools/cassandra-loader/build/cassandra-loader -f users.csv -host localhost -schema "datastax_creditcard_demo.users(user_id,first,last,gender,city,state,cc_no)"
+	~/Tools/cassandra-loader/build/cassandra-loader -f users.csv -host localhost -schema "datastax_creditcard_demo.users(user_id,first,last,gender,city,state,cc_no)"
 
-~/Tools/cassandra-loader/build/cassandra-loader -f issuers.csv -host localhost -schema "datastax_creditcard_demo.issuers(id, name, location)"
+	~/Tools/cassandra-loader/build/cassandra-loader -f issuers.csv -host localhost -schema "datastax_creditcard_demo.issuers(id, name, location)"
 
+``` cql
 insert into blacklist_issuers (issuer, city, amount) values ('Issuer7','City-4986',450);
 insert into blacklist_issuers (issuer, city, amount) values ('Issuer7','City-4986',50);
 insert into blacklist_issuers (issuer, city, amount) values ('Issuer50000','City-1969',200);
 
 insert into blacklist_cards (dummy, cc_no, amount) values ('dummy', '0000000005702649', 1000);
 insert into blacklist_cards (dummy, cc_no, amount) values ('dummy', '0000000004737244', 1000);
-
+```
 	
 To remove the tables and the schema, run the following.
 
