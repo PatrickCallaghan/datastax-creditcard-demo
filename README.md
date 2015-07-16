@@ -14,7 +14,8 @@ The Fraud Detection systems encapsulates a credit card transaction system and da
 4. Create blacklist/watchlist of users and issuers.
 5. Raise alerts when a monitor is logged in and transactions in watch list are observed
 
-Dashboard View will contain the following 
+Dashboard View will contain the following
+ 
 1. No of overall transactions
 2. No of transactions by sector
 3. No of transactions by issuer
@@ -60,9 +61,9 @@ Commands
 	~/Tools/cassandra-loader/build/cassandra-loader -f issuers.csv -host localhost -schema "datastax_creditcard_demo.issuers(id, name, location)"
 
 ``` cql
-insert into blacklist_issuers (issuer, city, amount) values ('Issuer7','City-4986',450);
-insert into blacklist_issuers (issuer, city, amount) values ('Issuer7','City-4986',50);
-insert into blacklist_issuers (issuer, city, amount) values ('Issuer50000','City-1969',200);
+insert into blacklist_merchants (merchant, city, amount) values ('merchant1','City-125',200); 
+insert into blacklist_merchants (merchant, city, amount) values ('merchant7','City-4986',50);
+insert into blacklist_merchants (merchant, city, amount) values ('merchant50000','City-1969',200);
 
 insert into blacklist_cards (dummy, cc_no, amount) values ('dummy', '0000000005702649', 1000);
 insert into blacklist_cards (dummy, cc_no, amount) values ('dummy', '0000000004737244', 1000);
