@@ -86,10 +86,11 @@ public class CreditCardService {
 
 	public CreditCardService() {
 		
-		String contactPointsStr = PropertyHelper.getProperty("contactPoints", "localhost");		
+		String contactPointsStr = PropertyHelper.getProperty("contactPoints", "localhost");	
+		String solrHost= PropertyHelper.getProperty("solr", "localhost");	
 		this.dao = new CreditCardDao(contactPointsStr.split(","));
 		
-		solr = new HttpSolrServer("http://"+contactPointsStr+":8983/solr/datastax_creditcard_demo.users");
+		solr = new HttpSolrServer("http://"+solrHost+":8983/solr/datastax_creditcard_demo.users");
 		 
 		init();
 	}

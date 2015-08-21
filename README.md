@@ -58,7 +58,7 @@ Commands
 
 	~/Tools/cassandra-loader/build/cassandra-loader -f users.csv -host localhost -schema "datastax_creditcard_demo.users(user_id,first,last,gender,city,state,cc_no)"
 
-	~/Tools/cassandra-loader/build/cassandra-loader -f issuers.csv -host localhost -schema "datastax_creditcard_demo.issuers(id, name, location)"
+	~/Tools/cassandra-loader/build/cassandra-loader -f merchants.csv -host localhost -schema "datastax_creditcard_demo.merchants(id, name, location)"
 
 ``` cql
 insert into blacklist_merchants (merchant, city, amount) values ('merchant1','City-125',200); 

@@ -15,6 +15,7 @@ import com.datastax.creditcard.model.Transaction;
 import com.datastax.demo.utils.PropertyHelper;
 import com.datastax.demo.utils.Timer;
 
+@Deprecated
 public class Main {
 
 	private static Logger logger = LoggerFactory.getLogger(Main.class);
@@ -49,8 +50,6 @@ public class Main {
 			if (i > 0 && i % BATCH == 0) {
 				total += BATCH;
 				logger.info("Wrote " + total + " records");
-				
-				//updateBalances(dao);	
 			}
 		}
 		timer.end();

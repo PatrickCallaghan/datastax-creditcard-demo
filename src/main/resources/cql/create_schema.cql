@@ -33,11 +33,25 @@ create table if not exists transactions(
  	user_id text,
 	location text,
 	items map<text, double>,
-	issuer text,
+	merchant text,
 	amount double,
 	status text,
 	notes text,
 	PRIMARY KEY (transaction_id)
+) WITH compaction = {'class': 'DateTieredCompactionStrategy'};
+
+create table if not exists latest_transactions(
+	cc_no text,
+	transaction_time timestamp,
+ 	transaction_id text,
+ 	user_id text,
+	location text,
+	items map<text, double>,
+	merchant text,
+	amount double,
+	status text,
+	notes text,
+	PRIMARY KEY (cc_no, transaction_time)
 ) WITH compaction = {'class': 'DateTieredCompactionStrategy'};
 
 create table if not exists blacklist_transactions(
@@ -60,9 +74,6 @@ create table if not exists users(
      AND compression = {'sstable_compression' : ''}
      AND caching = {'keys':'NONE', 'rows_per_partition':'NONE'};
     
-
-//Change some user stuff        
-alter table users add email text; 
 
 create table if not exists user_rules (
 	user_id text,
@@ -87,10 +98,10 @@ create table if not exists merchants(
      AND caching = {'keys':'NONE', 'rows_per_partition':'NONE'};
     
 create table if not exists blacklist_merchants(
-	issuer text,
+	merchant text,
 	city text,
 	amount double,
-	PRIMARY KEY (issuer, city)
+	PRIMARY KEY (merchant, city)
 ) WITH compaction= { 'class': 'MemoryOnlyStrategy' }
      AND compression = {'sstable_compression' : ''}
      AND caching = {'keys':'NONE', 'rows_per_partition':'NONE'};

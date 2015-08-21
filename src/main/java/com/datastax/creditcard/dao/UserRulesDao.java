@@ -37,7 +37,7 @@ public class UserRulesDao {
 	private static final String GET_USER_RULE = "select * from " + userRules
 			+ " where user_id = ? and rule_id = ?";
 
-	private static final String INSERT_USER_RULE = "insert into " +userRules+ " (user_id, rule_id, rule_name, issuer, amount, nooftransactions, noofdays) values (?,?,?,?,?,?,?)";
+	private static final String INSERT_USER_RULE = "insert into " +userRules+ " (user_id, rule_id, rule_name, merchant, amount, nooftransactions, noofdays) values (?,?,?,?,?,?,?)";
 	private static final String DELETE_USER_RULE = "delete from " +userRules+ " where user_id = ? and rule_id = ?";
 			
 	private PreparedStatement getAllUserRules;

@@ -43,16 +43,16 @@ public class CreditCardDao {
 	private static String transactionTable = keyspaceName + ".transactions";
 	private static String latestTransactionTable = keyspaceName + ".latest_transactions";
 	private static String userTable = keyspaceName + ".users";
-	private static String issuerTable = keyspaceName + ".issuers";
+	private static String merchantTable = keyspaceName + ".merchants";
 
 	private static final String GET_TRANSACTIONS_CCNO_AND_ID = "select transaction_id from " + balanceTable
 			+ " where cc_no = ?";
 	private static final String INSERT_INTO_TRANSACTION = "Insert into " + transactionTable
-			+ " (cc_no, transaction_time, transaction_id, items, location, issuer, amount, user_id, status, notes) values (?,?,?,?,?,?,?,?,?,?);";
+			+ " (cc_no, transaction_time, transaction_id, items, location, merchant, amount, user_id, status, notes) values (?,?,?,?,?,?,?,?,?,?);";
 	private static final String INSERT_INTO_LATEST_TRANSACTION = "Insert into " + latestTransactionTable
-			+ " (cc_no, transaction_time, transaction_id, items, location, issuer, amount, user_id, status, notes) values (?,?,?,?,?,?,?,?,?,?) using ttl 864000";	
+			+ " (cc_no, transaction_time, transaction_id, items, location, merchant, amount, user_id, status, notes) values (?,?,?,?,?,?,?,?,?,?) using ttl 864000";	
 	private static final String INSERT_INTO_MERCHANT = "insert into " + transactionsByMerchantTable
-			+ "(issuer, date, transaction_id, cc_no, transaction_time, amount) values (?,?,?,?,?,?)";
+			+ "(merchant, date, transaction_id, cc_no, transaction_time, amount) values (?,?,?,?,?,?)";
 	private static final String UPDATE_BALANCE = "update " + balanceTable
 			+ " set balance = ?, balance_at = ?  where cc_no = ?";
 
@@ -64,7 +64,7 @@ public class CreditCardDao {
 			+ "(cc_no, balance, balance_at) values (?,?,?)";
 
 	private static final String GET_ALL_MERCHANT_BY_DATE = "select transaction_id,amount,cc_no   from " + transactionsByMerchantTable
-			+ " where issuer = ? and date = ?";
+			+ " where merchant = ? and date = ?";
 	private static final String GET_ALL_TRANSACTIONS_BY_TIME = "select transaction_id,amount,cc_no from "
 			+ balanceTable + " where cc_no = ? and transaction_id > ? and transaction_id < ? LIMIT ?";
 	private static final String GET_TRANSACTIONS_BY_ID = "select * from "
@@ -74,7 +74,7 @@ public class CreditCardDao {
 
 	private static final String GET_ALL_CREDIT_CARDS = "select cc_no, balance_at, balance from " + balanceTable;
 	private static final String GET_USER = "Select * from " + userTable + " where user_id = ?";
-	private static final String GET_MERCHANT = "Select * from " + issuerTable + " where id = ?";
+	private static final String GET_MERCHANT = "Select * from " + merchantTable + " where id = ?";
 	
 	private PreparedStatement insertTransactionStmt;
 	private PreparedStatement insertLatestTransactionStmt;

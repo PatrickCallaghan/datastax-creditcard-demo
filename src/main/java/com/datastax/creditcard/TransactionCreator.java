@@ -48,7 +48,7 @@ public class TransactionCreator {
 		int total = 0;
 		long totalTime = 0;
 		
-		getRANDOM(noOfTransactionsPerDay);
+		getRandom(noOfTransactionsPerDay);
 		
 		//Historic data
 		if (noOfDays > 0){
@@ -65,7 +65,7 @@ public class TransactionCreator {
 				if (total > 0 && total % BATCH == 0) {
 					logger.info("Wrote " + total + " Transactions at " + totalTime/total + " per ms (" + date + ")");
 					sleep(DEFAULT_SLEEP);
-					getRANDOM (noOfTransactionsPerDay);
+					getRandom (noOfTransactionsPerDay);
 				}
 			}		
 		}
@@ -89,7 +89,7 @@ public class TransactionCreator {
 		}
 	}
 
-	private void getRANDOM(int noOfTransactionsPerDay) {
+	private void getRandom(int noOfTransactionsPerDay) {
 		
 		double divisor = noOfTransactionsPerDay * (Math.random() + .5);
 		

@@ -43,7 +43,7 @@ public class BlackListDao {
 	private static final String GET_ALL_BLACKLIST_MERCHANTS = "select * from " + blacklistMerchants
 			;
 	private static final String INSERT_INTO_BLACKLIST_MERCHANTS = "insert into " + blacklistMerchants
-			+ "(issuer, city, amount) values (?,?,?);";
+			+ "(merchant, city, amount) values (?,?,?);";
 	private static final String INSERT_INTO_BLACKLIST_CARDS = "insert into " + blacklistCards
 			+ "(dummy, cc_no, amount) values ('dummy', ?,?);";
 	private static final String INSERT_INTO_BLACKLIST_TRANSACTIONS = "insert into " + blacklistTransactions
